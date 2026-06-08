@@ -1,0 +1,29 @@
+version: "2"
+
+run:
+  go: "1.26"
+
+linters:
+  # errcheck, govet, ineffassign, staticcheck and unused are enabled by default.
+  enable:
+    - revive
+    - misspell
+    - unconvert
+    - gocritic
+  settings:
+    errcheck:
+      # Writes to terminal log streams are best-effort.
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

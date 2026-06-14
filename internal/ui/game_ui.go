@@ -1,3 +1,5 @@
+//go:build ebiten
+
 // Package ui renders an agent-vs-agent game with Ebiten. It reads board state
 // from pkg/chess for drawing and runs each agent's search on a worker goroutine
 // so the window stays responsive while agents think.

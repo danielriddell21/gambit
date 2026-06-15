@@ -69,8 +69,13 @@ func drawGlyph(screen *ebiten.Image, glyph string, face text.Face, x, y float64,
 }
 
 // squareTopLeft returns the pixel coordinates of a square's top-left corner.
-// Rank 8 is drawn at the top, file a at the left.
+// By default rank 8 is at the top and file a at the left; when flipped the board
+// is rotated 180° so black is at the bottom.
 func (u *GameUI) squareTopLeft(file, rank int) (x, y float32) {
 	size := float32(u.cfg.SquareSize)
-	return float32(file) * size, float32(7-rank) * size
+	col, row := file, 7-rank
+	if u.flipped {
+		col, row = 7-file, rank
+	}
+	return float32(col) * size, float32(row) * size
 }

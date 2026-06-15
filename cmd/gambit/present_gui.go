@@ -10,8 +10,9 @@ import (
 	"github.com/danielriddell21/gambit/internal/ui"
 )
 
-// present renders the game in an Ebiten window.
-func present(g *game.Game, logger *applog.Logger, c config) error {
+// present renders the game in an Ebiten window. newGame rebuilds the game when
+// the user restarts.
+func present(g *game.Game, newGame func() *game.Game, logger *applog.Logger, c config) error {
 	cfg := ui.DefaultConfig()
 	cfg.MoveDelay = c.delay
 	cfg.RecordPath = c.record
@@ -19,7 +20,7 @@ func present(g *game.Game, logger *applog.Logger, c config) error {
 		cfg.SquareSize = c.square
 	}
 
-	gui, err := ui.New(g, logger, cfg)
+	gui, err := ui.New(g, newGame, logger, cfg)
 	if err != nil {
 		return err
 	}

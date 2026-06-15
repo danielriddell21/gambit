@@ -51,18 +51,40 @@ func run(c config) error {
 		start = b
 	}
 
-	white, err := agent.New(c.white, agent.Options{Seed: c.seed, Depth: c.depth})
-	if err != nil {
-		return err
+	// build constructs a fresh game with newly created agents. The seed is
+	// offset per call so restarts of stochastic agents play out differently.
+	var restarts int64
+	build := func() (*game.Game, error) {
+		opts := func(extra int64) agent.Options {
+			return agent.Options{Seed: c.seed + restarts*2 + extra, Depth: c.depth}
+		}
+		white, err := agent.New(c.white, opts(0))
+		if err != nil {
+			return nil, err
+		}
+		black, err := agent.New(c.black, opts(1))
+		if err != nil {
+			return nil, err
+		}
+		restarts++
+		var s *chess.Board
+		if start != nil {
+			s = start.Clone()
+		}
+		return game.New(game.Players{White: white, Black: black}, s), nil
 	}
-	black, err := agent.New(c.black, agent.Options{Seed: c.seed + 1, Depth: c.depth})
+
+	g, err := build() // also validates the agent names
 	if err != nil {
 		return err
 	}
 
-	g := game.New(game.Players{White: white, Black: black}, start)
 	logger := applog.New()
-	fmt.Printf("gambit: white=%s black=%s\n", white.Name(), black.Name())
+	fmt.Printf("gambit: white=%s black=%s\n", c.white, c.black)
 
-	return present(g, logger, c)
+	newGame := func() *game.Game {
+		ng, _ := build() // names already validated above
+		return ng
+	}
+	return present(g, newGame, logger, c)
 }

@@ -10,8 +10,8 @@ import (
 )
 
 // present runs the game to completion without a GUI, logging every move and the
-// final result. GUI-only config (delay, recording) is ignored in headless mode.
-func present(g *game.Game, logger *applog.Logger, _ config) error {
+// final result. The restart factory and GUI-only config are ignored here.
+func present(g *game.Game, _ func() *game.Game, logger *applog.Logger, _ config) error {
 	if err := g.Run(context.Background(), logger.Move); err != nil {
 		return err
 	}

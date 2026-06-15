@@ -41,14 +41,5 @@ func (l *Logger) Move(ev game.MoveEvent) {
 
 // Result logs the final outcome of a game.
 func (l *Logger) Result(res chess.Result, reason chess.DrawReason) {
-	switch res {
-	case chess.WhiteWins:
-		fmt.Fprintf(l.w, "result: %s (white wins by checkmate)\n", res)
-	case chess.BlackWins:
-		fmt.Fprintf(l.w, "result: %s (black wins by checkmate)\n", res)
-	case chess.Draw:
-		fmt.Fprintf(l.w, "result: %s (draw by %s)\n", res, reason)
-	default:
-		fmt.Fprintf(l.w, "result: %s\n", res)
-	}
+	fmt.Fprintf(l.w, "result: %s (%s)\n", res, game.ResultText(res, reason))
 }

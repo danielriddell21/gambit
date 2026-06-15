@@ -19,7 +19,8 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// Piece tint colors.
+// Piece tint colors, reused for the info bar and banner so the recorder palette
+// stays small.
 var (
 	pieceWhite = color.RGBA{R: 0xf5, G: 0xf5, B: 0xf0, A: 0xff}
 	pieceBlack = color.RGBA{R: 0x20, G: 0x20, B: 0x24, A: 0xff}
@@ -67,11 +68,15 @@ type stepResult struct {
 
 // GameUI is the ebiten.Game driving an agent-vs-agent match.
 type GameUI struct {
-	game    *game.Game
-	newGame func() *game.Game
-	log     *applog.Logger
-	cfg     Config
-	face    text.Face
+	game      *game.Game
+	newGame   func() *game.Game
+	log       *applog.Logger
+	cfg       Config
+	barHeight int
+
+	face       text.Face // piece glyphs
+	barFace    text.Face // info bar text
+	bannerFace text.Face // game-over banner
 
 	snapshot     [64]chess.Piece // cached board, only mutated on the main goroutine
 	thinking     bool
@@ -93,17 +98,34 @@ type GameUI struct {
 
 // New builds a GameUI. newGame rebuilds the game when the user restarts (R).
 func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config) (*GameUI, error) {
-	face, err := newFace(float64(cfg.SquareSize) * 0.8)
+	sq := float64(cfg.SquareSize)
+	face, err := newFace(sq * 0.8)
 	if err != nil {
 		return nil, err
 	}
+	barHeight := cfg.SquareSize * 7 / 10
+	if barHeight < 46 {
+		barHeight = 46
+	}
+	barFace, err := newFace(float64(barHeight) * 0.3)
+	if err != nil {
+		return nil, err
+	}
+	bannerFace, err := newFace(sq * 0.42)
+	if err != nil {
+		return nil, err
+	}
+
 	u := &GameUI{
-		game:     g,
-		newGame:  newGame,
-		log:      log,
-		cfg:      cfg,
-		face:     face,
-		resultCh: make(chan stepResult, 1),
+		game:       g,
+		newGame:    newGame,
+		log:        log,
+		cfg:        cfg,
+		barHeight:  barHeight,
+		face:       face,
+		barFace:    barFace,
+		bannerFace: bannerFace,
+		resultCh:   make(chan stepResult, 1),
 	}
 	if cfg.RecordPath != "" {
 		delay := cfg.RecordDelay
@@ -236,10 +258,14 @@ func clampDelay(d time.Duration) time.Duration {
 	}
 }
 
-// Draw paints the board and pieces, capturing a frame when recording.
+// Draw paints the board, pieces, info bar and (when finished) the banner.
 func (u *GameUI) Draw(screen *ebiten.Image) {
 	u.drawBoard(screen)
 	u.drawPieces(screen)
+	u.drawInfoBar(screen)
+	if u.game.Over() {
+		u.drawBanner(screen)
+	}
 
 	if u.rec != nil && u.needCapture {
 		u.rec.capture(screen)
@@ -250,13 +276,16 @@ func (u *GameUI) Draw(screen *ebiten.Image) {
 	}
 }
 
-// Layout fixes the logical screen size to the board dimensions.
+// Layout fixes the logical screen size to the board plus the info bar.
 func (u *GameUI) Layout(_, _ int) (int, int) {
-	side := u.cfg.SquareSize * 8
-	return side, side
+	return u.WindowSize()
 }
 
-// BoardPixels returns the window's pixel size.
-func (u *GameUI) BoardPixels() int {
+// WindowSize returns the pixel size of the window (board + info bar).
+func (u *GameUI) WindowSize() (int, int) {
+	return u.boardSize(), u.boardSize() + u.barHeight
+}
+
+func (u *GameUI) boardSize() int {
 	return u.cfg.SquareSize * 8
 }

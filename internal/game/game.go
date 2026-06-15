@@ -65,6 +65,14 @@ func (g *Game) DrawReason() chess.DrawReason { return g.reason }
 // Moves returns the moves played so far.
 func (g *Game) Moves() []chess.Move { return g.moves }
 
+// AgentName returns the name of the agent playing the given color.
+func (g *Game) AgentName(c chess.Color) string {
+	if c == chess.White {
+		return g.players.White.Name()
+	}
+	return g.players.Black.Name()
+}
+
 // Over reports whether the game has finished.
 func (g *Game) Over() bool { return g.result != chess.InProgress }
 

@@ -21,10 +21,11 @@ type Agent interface {
 }
 
 // Options carries tunable knobs for constructing an agent. New strategies add
-// fields here as needed (e.g. beam width).
+// fields here as needed.
 type Options struct {
-	Seed  int64 // RNG seed for stochastic strategies
-	Depth int   // search depth for depth-limited strategies
+	Seed       int64 // RNG seed for stochastic strategies
+	Depth      int   // search depth / horizon for depth-limited strategies
+	Width      int   // beam width for beam search
 }
 
 // Factory builds an agent from options.

@@ -34,6 +34,7 @@ func main() {
 type config struct {
 	white, black string
 	depth        int
+	iterations   int
 	width        int
 	seed         int64
 	fen          string
@@ -57,7 +58,7 @@ func run(c config) error {
 	var restarts int64
 	build := func() (*game.Game, error) {
 		opts := func(extra int64) agent.Options {
-			return agent.Options{Seed: c.seed + restarts*2 + extra, Depth: c.depth, Width: c.width}
+			return agent.Options{Seed: c.seed + restarts*2 + extra, Depth: c.depth, Width: c.width, Iterations: c.iterations}
 		}
 		white, err := agent.New(c.white, opts(0))
 		if err != nil {

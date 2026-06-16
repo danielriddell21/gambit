@@ -40,6 +40,14 @@ func (a *alphaBetaAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 	}
 	orderMoves(b, moves)
 
+	best, _ := searchRoot(ctx, b, a.depth, a.eval, moves)
+	return best, nil
+}
+
+// searchRoot runs negamax over the (pre-ordered) root moves and returns the best
+// move and its score. It stops early on cancellation, keeping the best move
+// found so far.
+func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, moves []chess.Move) (chess.Move, int) {
 	best := moves[0]
 	alpha := -infinity
 	for _, m := range moves {
@@ -47,23 +55,22 @@ func (a *alphaBetaAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 			break // honor cancellation; keep best move found so far
 		}
 		u := b.MakeMove(m)
-		score := -a.negamax(ctx, b, a.depth-1, -infinity, -alpha)
+		score := -negamax(ctx, b, depth-1, -infinity, -alpha, e)
 		b.UnmakeMove(m, u)
 		if score > alpha {
 			alpha = score
 			best = m
 		}
 	}
-	return best, nil
+	return best, alpha
 }
 
-// negamax returns the value of the position from the side-to-move's perspective.
-func (a *alphaBetaAgent) negamax(ctx context.Context, b *chess.Board, depth, alpha, beta int) int {
-	if ctx.Err() != nil {
-		return a.eval(b)
-	}
-	if depth == 0 {
-		return a.eval(b)
+// negamax returns the value of the position from the side-to-move's perspective,
+// using e to evaluate leaves. It is shared by the fixed-depth and
+// iterative-deepening agents.
+func negamax(ctx context.Context, b *chess.Board, depth, alpha, beta int, e eval.Func) int {
+	if ctx.Err() != nil || depth == 0 {
+		return e(b)
 	}
 
 	moves := b.GenerateMoves(nil)
@@ -79,7 +86,7 @@ func (a *alphaBetaAgent) negamax(ctx context.Context, b *chess.Board, depth, alp
 	best := -infinity
 	for _, m := range moves {
 		u := b.MakeMove(m)
-		score := -a.negamax(ctx, b, depth-1, -beta, -alpha)
+		score := -negamax(ctx, b, depth-1, -beta, -alpha, e)
 		b.UnmakeMove(m, u)
 		if score > best {
 			best = score

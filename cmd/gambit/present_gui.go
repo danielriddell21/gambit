@@ -25,7 +25,8 @@ func present(g *game.Game, newGame func() *game.Game, logger *applog.Logger, c c
 		return err
 	}
 
-	ebiten.SetWindowSize(gui.BoardPixels(), gui.BoardPixels())
+	w, h := gui.WindowSize()
+	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowTitle("gambit")
 	return ebiten.RunGame(gui)
 }

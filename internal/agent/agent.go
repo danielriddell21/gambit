@@ -25,7 +25,7 @@ type Agent interface {
 type Options struct {
 	Seed       int64 // RNG seed for stochastic strategies
 	Depth      int   // search depth / horizon for depth-limited strategies
- 	Width int   // beam width for beam search
+	Width      int   // beam width for beam search
 	Iterations int   // playout budget for MCTS
 }
 

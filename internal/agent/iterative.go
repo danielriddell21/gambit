@@ -39,14 +39,14 @@ func (a *iterativeAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 		if ctx.Err() != nil {
 			break
 		}
-		m, _ := searchRoot(ctx, b, depth, a.eval, moves)
+		m := searchRoot(ctx, b, depth, a.eval, moves)
 		if ctx.Err() != nil {
 			break // this depth was cut short; keep the previous best
 		}
 		best = m
 		moveToFront(moves, best) // search the best move first next iteration
 	}
-	return best, nil
+	return best, nil //nolint:nilerr // on ctx timeout, keep the best move found so far
 }
 
 // moveToFront moves m to the front of moves, preserving the order of the rest.

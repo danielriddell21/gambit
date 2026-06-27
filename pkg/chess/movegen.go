@@ -100,40 +100,49 @@ func (b *Board) genPawn(dst []Move, from Square) []Move {
 		dir, startRank, promoRank = -1, 6, 0
 	}
 
-	// Single push.
 	oneRank := r + dir
-	if oneRank >= 0 && oneRank <= 7 {
-		one := NewSquare(f, oneRank)
-		if b.squares[one].IsEmpty() {
-			dst = b.addPawnMove(dst, from, one, oneRank == promoRank, FlagNormal)
-			// Double push.
-			if r == startRank {
-				two := NewSquare(f, r+2*dir)
-				if b.squares[two].IsEmpty() {
-					dst = append(dst, NewMove(from, two, FlagDoublePawnPush))
-				}
-			}
+	if oneRank < 0 || oneRank > 7 {
+		return dst
+	}
+	dst = b.genPawnPushes(dst, from, f, r, dir, startRank, oneRank, promoRank)
+	dst = b.genPawnCaptures(dst, from, f, oneRank, promoRank, us)
+	return dst
+}
+
+// genPawnPushes adds the single (and, from the start rank, double) forward pushes
+// for the pawn on from when the squares ahead are empty.
+func (b *Board) genPawnPushes(dst []Move, from Square, f, r, dir, startRank, oneRank, promoRank int) []Move {
+	one := NewSquare(f, oneRank)
+	if !b.squares[one].IsEmpty() {
+		return dst
+	}
+	dst = b.addPawnMove(dst, from, one, oneRank == promoRank, FlagNormal)
+	if r == startRank { // double push
+		two := NewSquare(f, r+2*dir)
+		if b.squares[two].IsEmpty() {
+			dst = append(dst, NewMove(from, two, FlagDoublePawnPush))
 		}
 	}
+	return dst
+}
 
-	// Captures (including en passant).
-	if oneRank >= 0 && oneRank <= 7 {
-		for _, df := range [2]int{-1, 1} {
-			nf := f + df
-			if nf < 0 || nf > 7 {
-				continue
-			}
-			to := NewSquare(nf, oneRank)
-			target := b.squares[to]
-			switch {
-			case !target.IsEmpty() && target.Color() != us:
-				dst = b.addPawnMove(dst, from, to, oneRank == promoRank, FlagNormal)
-			case to == b.enPassant:
-				dst = append(dst, NewMove(from, to, FlagEnPassant))
-			}
+// genPawnCaptures adds the diagonal captures for the pawn on from, including en
+// passant.
+func (b *Board) genPawnCaptures(dst []Move, from Square, f, oneRank, promoRank int, us Color) []Move {
+	for _, df := range [2]int{-1, 1} {
+		nf := f + df
+		if nf < 0 || nf > 7 {
+			continue
+		}
+		to := NewSquare(nf, oneRank)
+		target := b.squares[to]
+		switch {
+		case !target.IsEmpty() && target.Color() != us:
+			dst = b.addPawnMove(dst, from, to, oneRank == promoRank, FlagNormal)
+		case to == b.enPassant:
+			dst = append(dst, NewMove(from, to, FlagEnPassant))
 		}
 	}
-
 	return dst
 }
 
@@ -159,29 +168,54 @@ func (b *Board) genCastling(dst []Move) []Move {
 		return dst
 	}
 
-	if us == White {
-		if b.castling.Has(WhiteKingside) &&
-			b.squares[5].IsEmpty() && b.squares[6].IsEmpty() &&
-			!b.IsSquareAttacked(5, them) && !b.IsSquareAttacked(6, them) {
-			dst = append(dst, NewMove(4, 6, FlagCastleKingside))
-		}
-		if b.castling.Has(WhiteQueenside) &&
-			b.squares[3].IsEmpty() && b.squares[2].IsEmpty() && b.squares[1].IsEmpty() &&
-			!b.IsSquareAttacked(3, them) && !b.IsSquareAttacked(2, them) {
-			dst = append(dst, NewMove(4, 2, FlagCastleQueenside))
-		}
-	} else {
-		if b.castling.Has(BlackKingside) &&
-			b.squares[61].IsEmpty() && b.squares[62].IsEmpty() &&
-			!b.IsSquareAttacked(61, them) && !b.IsSquareAttacked(62, them) {
-			dst = append(dst, NewMove(60, 62, FlagCastleKingside))
-		}
-		if b.castling.Has(BlackQueenside) &&
-			b.squares[59].IsEmpty() && b.squares[58].IsEmpty() && b.squares[57].IsEmpty() &&
-			!b.IsSquareAttacked(59, them) && !b.IsSquareAttacked(58, them) {
-			dst = append(dst, NewMove(60, 58, FlagCastleQueenside))
+	for _, c := range castlingOptions(us) {
+		if b.castling.Has(c.right) && b.squaresEmpty(c.empty) && b.squaresSafe(c.safe, them) {
+			dst = append(dst, NewMove(c.from, c.to, c.flag))
 		}
 	}
-
 	return dst
+}
+
+// castleOption describes one castling move: the right it needs, the squares that
+// must be empty, the squares that must be unattacked, and the king's move.
+type castleOption struct {
+	right    CastleRights
+	empty    []Square
+	safe     []Square
+	from, to Square
+	flag     MoveFlag
+}
+
+// castlingOptions returns the two castling moves for the side to move.
+func castlingOptions(us Color) []castleOption {
+	if us == White {
+		return []castleOption{
+			{WhiteKingside, []Square{5, 6}, []Square{5, 6}, 4, 6, FlagCastleKingside},
+			{WhiteQueenside, []Square{3, 2, 1}, []Square{3, 2}, 4, 2, FlagCastleQueenside},
+		}
+	}
+	return []castleOption{
+		{BlackKingside, []Square{61, 62}, []Square{61, 62}, 60, 62, FlagCastleKingside},
+		{BlackQueenside, []Square{59, 58, 57}, []Square{59, 58}, 60, 58, FlagCastleQueenside},
+	}
+}
+
+// squaresEmpty reports whether all the given squares are unoccupied.
+func (b *Board) squaresEmpty(sqs []Square) bool {
+	for _, s := range sqs {
+		if !b.squares[s].IsEmpty() {
+			return false
+		}
+	}
+	return true
+}
+
+// squaresSafe reports whether none of the given squares is attacked by the side.
+func (b *Board) squaresSafe(sqs []Square, by Color) bool {
+	for _, s := range sqs {
+		if b.IsSquareAttacked(s, by) {
+			return false
+		}
+	}
+	return true
 }

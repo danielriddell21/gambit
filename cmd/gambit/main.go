@@ -48,7 +48,7 @@ func run(c config) error {
 	if c.fen != "" {
 		b, err := chess.ParseFEN(c.fen)
 		if err != nil {
-			return err
+			return fmt.Errorf("parse FEN: %w", err)
 		}
 		start = b
 	}
@@ -62,11 +62,11 @@ func run(c config) error {
 		}
 		white, err := agent.New(c.white, opts(0))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create white agent: %w", err)
 		}
 		black, err := agent.New(c.black, opts(1))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create black agent: %w", err)
 		}
 		restarts++
 		var s *chess.Board

@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/danielriddell21/gambit/internal/game"
 	applog "github.com/danielriddell21/gambit/internal/log"
@@ -13,7 +14,7 @@ import (
 // final result. The restart factory and GUI-only config are ignored here.
 func present(g *game.Game, _ func() *game.Game, logger *applog.Logger, _ config) error {
 	if err := g.Run(context.Background(), logger.Move); err != nil {
-		return err
+		return fmt.Errorf("run game: %w", err)
 	}
 	logger.Result(g.Result(), g.DrawReason())
 	return nil

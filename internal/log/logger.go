@@ -35,11 +35,11 @@ func (l *Logger) Move(ev game.MoveEvent) {
 	if ev.Mover == chess.Black {
 		dot = "..."
 	}
-	fmt.Fprintf(l.w, "%3d%-3s %-5s (%-8s) %-7s (%s)\n",
+	_, _ = fmt.Fprintf(l.w, "%3d%-3s %-5s (%-8s) %-7s (%s)\n",
 		moveNo, dot, ev.Mover, ev.AgentName, ev.SAN, ev.Move)
 }
 
 // Result logs the final outcome of a game.
 func (l *Logger) Result(res chess.Result, reason chess.DrawReason) {
-	fmt.Fprintf(l.w, "result: %s (%s)\n", res, game.ResultText(res, reason))
+	_, _ = fmt.Fprintf(l.w, "result: %s (%s)\n", res, game.ResultText(res, reason))
 }

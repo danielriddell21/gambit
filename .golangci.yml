@@ -1,29 +1,60 @@
 version: "2"
 
-run:
-  go: "1.26"
-
 linters:
-  # errcheck, govet, ineffassign, staticcheck and unused are enabled by default.
+  default: standard
   enable:
-    - revive
-    - misspell
-    - unconvert
+    - dupl
+    - cyclop
+    - errorlint
+    - gocognit
     - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - prealloc
+    - thelper
+    - unconvert
+    - unparam
+    - whitespace
+    - wrapcheck
   settings:
-    errcheck:
-      # Writes to terminal log streams are best-effort.
-      exclude-functions:
-        - fmt.Fprint
-        - fmt.Fprintf
-        - fmt.Fprintln
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+    cyclop:
+      max-complexity: 15
+    gocognit:
+      min-complexity: 20
+    gosec:
+      excludes:
+        - G107
+        - G115
+        - G204
+        - G304
+        - G404
   exclusions:
+    paths:
+      - examples
     rules:
-      - path: _test\.go
+      - path: "_test\\.go"
         linters:
-          - errcheck
+          - wrapcheck
+          - gosec
+          - unparam
+          - gocognit
+          - cyclop
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt
     - goimports
+  exclusions:
+    paths:
+      - examples
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/danielriddell21/gambit

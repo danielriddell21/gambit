@@ -40,14 +40,13 @@ func (a *alphaBetaAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 	}
 	orderMoves(b, moves)
 
-	best, _ := searchRoot(ctx, b, a.depth, a.eval, moves)
+	best := searchRoot(ctx, b, a.depth, a.eval, moves)
 	return best, nil
 }
 
 // searchRoot runs negamax over the (pre-ordered) root moves and returns the best
-// move and its score. It stops early on cancellation, keeping the best move
-// found so far.
-func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, moves []chess.Move) (chess.Move, int) {
+// move. It stops early on cancellation, keeping the best move found so far.
+func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, moves []chess.Move) chess.Move {
 	best := moves[0]
 	alpha := -infinity
 	for _, m := range moves {
@@ -62,7 +61,7 @@ func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, mov
 			best = m
 		}
 	}
-	return best, alpha
+	return best
 }
 
 // negamax returns the value of the position from the side-to-move's perspective,

@@ -2,14 +2,26 @@ package chess
 
 // knightDeltas are the (file, rank) offsets of a knight's moves.
 var knightDeltas = [8][2]int{
-	{1, 2}, {2, 1}, {2, -1}, {1, -2},
-	{-1, -2}, {-2, -1}, {-2, 1}, {-1, 2},
+	{1, 2},
+	{2, 1},
+	{2, -1},
+	{1, -2},
+	{-1, -2},
+	{-2, -1},
+	{-2, 1},
+	{-1, 2},
 }
 
 // kingDeltas are the (file, rank) offsets of a king's moves.
 var kingDeltas = [8][2]int{
-	{1, 0}, {1, 1}, {0, 1}, {-1, 1},
-	{-1, 0}, {-1, -1}, {0, -1}, {1, -1},
+	{1, 0},
+	{1, 1},
+	{0, 1},
+	{-1, 1},
+	{-1, 0},
+	{-1, -1},
+	{0, -1},
+	{1, -1},
 }
 
 // bishopDeltas are the diagonal sliding directions.

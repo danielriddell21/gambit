@@ -77,7 +77,7 @@ func (a *beamAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.Move,
 		}
 		beam = prune(next, a.width)
 	}
-	return beam[0].root, nil
+	return beam[0].root, nil //nolint:nilerr // on ctx timeout, return the best line found so far
 }
 
 // rootScore returns the evaluation from rootColor's perspective (eval is from

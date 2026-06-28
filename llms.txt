@@ -1,0 +1,28 @@
+# gambit
+
+> A dependency-free Go chess library and CLI: two agents play each other, logged in algebraic notation. The core models the board, generates legal moves, parses FEN, and verifies itself with perft.
+
+The chess library is importable as `github.com/danielriddell21/gambit/pkg/chess`. It has no external dependencies. The `gambit` command (`cmd/gambit`) drives two agents to play a game; it runs headless by default and, when built with `-tags ebiten`, renders the game in a window.
+
+Core library API:
+
+```go
+type Board struct{ /* ... */ }
+
+func NewStartingBoard() *Board
+func ParseFEN(fen string) (*Board, error)
+func (b *Board) LegalMoves() []Move
+func (b *Board) MakeMove(m Move) Undo
+func Perft(b *Board, depth int) uint64
+
+type Move uint16   // packed from/to/flag
+type Color uint8   // White, Black
+type Result uint8  // ongoing, checkmate, stalemate, draw
+```
+
+Agents (in `internal/agent`) implement a common interface and are selectable by name on the CLI (`--white`, `--black`): random, minimax, beam, mcts, and others. Use `--help` to list flags.
+
+## Docs
+
+- [pkg.go.dev reference](https://pkg.go.dev/github.com/danielriddell21/gambit/pkg/chess)
+- [README](https://github.com/danielriddell21/gambit/blob/trunk/README.md)

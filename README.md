@@ -1,6 +1,6 @@
 # gambit
-*n.* an opening that sacrifices material for position. Also: two bots arguing in algebraic notation.
 
+*n.* an opening that sacrifices material for position. Also: two bots arguing in algebraic notation.
 
 [![CI](https://github.com/danielriddell21/gambit/actions/workflows/ci.yaml/badge.svg)](https://github.com/danielriddell21/gambit/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/danielriddell21/gambit/graph/badge.svg)](https://codecov.io/gh/danielriddell21/gambit)
@@ -29,8 +29,7 @@ brew install --cask danielriddell21/tap/gambit  # native macOS GUI window
 - `internal/game` — turn orchestration, draw detection, SAN.
 - `internal/ui` — Ebiten rendering.
 
-## Usage
-
+## Quick start
 Needs Go 1.26.3, [`just`](https://github.com/casey/just), and (for the GUI)
 Ebiten's [system deps](https://ebitengine.org/en/documents/install.html).
 

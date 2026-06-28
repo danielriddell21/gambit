@@ -1,8 +1,10 @@
 //go:build ebiten
 
-package main
+package cli
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/danielriddell21/gambit/internal/game"
@@ -22,11 +24,14 @@ func present(g *game.Game, newGame func() *game.Game, logger *applog.Logger, c c
 
 	gui, err := ui.New(g, newGame, logger, cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("build ui: %w", err)
 	}
 
 	w, h := gui.WindowSize()
 	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowTitle("gambit")
-	return ebiten.RunGame(gui)
+	if err := ebiten.RunGame(gui); err != nil {
+		return fmt.Errorf("run game: %w", err)
+	}
+	return nil
 }

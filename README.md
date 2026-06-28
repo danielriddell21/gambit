@@ -41,7 +41,7 @@ just test                      # tests        just perft   # move-gen correctnes
 just lint                      # golangci-lint just demos   # regenerate demo GIFs
 ```
 
-Flags: `-white`, `-black`, `-depth`, `-seed`, `-fen`, `-delay`.
+Flags: `--white`, `--black`, `--depth`, `--seed`, `--fen`, `--delay`.
 
 <details>
 <summary>Linux: OpenGL/X11 libraries</summary>
@@ -59,3 +59,7 @@ Implement `agent.Agent` and `agent.Register` it in an `init` — the game loop a
 GUI need no changes. `Board.MakeMove`/`UnmakeMove` (for alpha-beta) and
 `Board.ApplyMove` (clone, for keeping many positions alive) are both available,
 and the headless build batches games with no display.
+
+## Documentation
+
+- [Demos](docs/demos.md)

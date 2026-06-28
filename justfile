@@ -46,5 +46,5 @@ tidy:
 
 # regenerate the demo GIFs under docs/demos by recording the GUI
 demos:
-    go run -tags ebiten ./cmd/gambit -white minimax -black random -seed 7 -delay 1ms -square 48 -record docs/demos/minimax-vs-random.gif
-    go run -tags ebiten ./cmd/gambit -white minimax -black minimax -depth 3 -seed 1 -delay 1ms -square 48 -record docs/demos/minimax-vs-minimax.gif
+    go run -tags ebiten ./cmd/gambit --white minimax --black random --seed 7 --delay 1ms --square 48 --record docs/demos/minimax-vs-random.gif
+    go run -tags ebiten ./cmd/gambit --white minimax --black minimax --depth 3 --seed 1 --delay 1ms --square 48 --record docs/demos/minimax-vs-minimax.gif

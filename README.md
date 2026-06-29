@@ -27,7 +27,7 @@ brew install --cask danielriddell21/tap/gambit  # native macOS GUI window
 - `pkg/chess` — reusable chess engine (board, moves, legality, FEN, results). The only public package.
 - `internal/agent` — pluggable `Agent` interface + the `random` and `minimax` strategies.
 - `internal/game` — turn orchestration, draw detection, SAN.
-- `internal/ui` — Ebiten rendering.
+- `internal/gui` — Ebiten window + the `Run`/`Available` seam (headless fallback without the `ebiten` tag).
 
 ## Quick start
 Needs Go 1.26.3, [`just`](https://github.com/casey/just), and (for the GUI)

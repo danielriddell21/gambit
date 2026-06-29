@@ -9,6 +9,7 @@ import (
 
 	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
+	"github.com/danielriddell21/gambit/internal/gui"
 	applog "github.com/danielriddell21/gambit/internal/log"
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
@@ -107,5 +108,17 @@ func run(c config) error {
 		ng, _ := build() // names already validated above
 		return ng
 	}
-	return present(g, newGame, logger, c)
+	cfg := gui.DefaultConfig()
+	cfg.Game = g
+	cfg.NewGame = newGame
+	cfg.Logger = logger
+	cfg.MoveDelay = c.delay
+	cfg.RecordPath = c.record
+	if c.square > 0 {
+		cfg.SquareSize = c.square
+	}
+	if err := gui.Run(cfg); err != nil {
+		return fmt.Errorf("run gui: %w", err)
+	}
+	return nil
 }

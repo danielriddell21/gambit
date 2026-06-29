@@ -1,9 +1,6 @@
 //go:build ebiten
 
-// Package ui renders an agent-vs-agent game with Ebiten. It reads board state
-// from pkg/chess for drawing and runs each agent's search on a worker goroutine
-// so the window stays responsive while agents think.
-package ui
+package gui
 
 import (
 	"context"
@@ -31,33 +28,6 @@ const (
 	minDelay = 10 * time.Millisecond
 	maxDelay = 3 * time.Second
 )
-
-// Config controls the look and pacing of the GUI.
-type Config struct {
-	SquareSize   int
-	LightSquare  color.RGBA
-	DarkSquare   color.RGBA
-	MoveDelay    time.Duration // pause between moves so the game is watchable
-	ThinkTimeout time.Duration // hard cap on an agent's thinking time
-
-	// RecordPath, when set, records the rendered game to an animated GIF at that
-	// path and exits when the game ends. RecordDelay is the per-frame delay in
-	// hundredths of a second.
-	RecordPath  string
-	RecordDelay int
-}
-
-// DefaultConfig returns sensible defaults.
-func DefaultConfig() Config {
-	return Config{
-		SquareSize:   80,
-		LightSquare:  color.RGBA{R: 0xec, G: 0xd9, B: 0xb6, A: 0xff},
-		DarkSquare:   color.RGBA{R: 0xa9, G: 0x7a, B: 0x55, A: 0xff},
-		MoveDelay:    400 * time.Millisecond,
-		ThinkTimeout: 10 * time.Second,
-		RecordDelay:  70,
-	}
-}
 
 type stepResult struct {
 	ev  game.MoveEvent
@@ -96,8 +66,9 @@ type GameUI struct {
 	recSaved      bool      // the GIF has been written
 }
 
-// New builds a GameUI. newGame rebuilds the game when the user restarts (R).
-func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config) (*GameUI, error) {
+// newGameUI builds a GameUI from cfg. cfg.NewGame rebuilds the game when the
+// user restarts (R).
+func newGameUI(cfg Config) (*GameUI, error) {
 	sq := float64(cfg.SquareSize)
 	face, err := newFace(sq * 0.8)
 	if err != nil {
@@ -117,9 +88,9 @@ func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config
 	}
 
 	u := &GameUI{
-		game:       g,
-		newGame:    newGame,
-		log:        log,
+		game:       cfg.Game,
+		newGame:    cfg.NewGame,
+		log:        cfg.Logger,
 		cfg:        cfg,
 		barHeight:  barHeight,
 		face:       face,

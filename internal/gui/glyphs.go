@@ -1,6 +1,6 @@
 //go:build ebiten
 
-package ui
+package gui
 
 import (
 	"bytes"

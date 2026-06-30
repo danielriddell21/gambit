@@ -122,10 +122,29 @@ func (u *GameUI) refreshSnapshot() {
 func (u *GameUI) Update() error {
 	u.handleInput()
 
+	if err := u.drainResult(); err != nil {
+		return err
+	}
+	if u.rec != nil {
+		if err := u.finalizeRecording(); err != nil {
+			return err
+		}
+	}
+	if !u.readyToStep() {
+		return nil
+	}
+	u.stepOnce = false
+	u.startThinking()
+	return nil
+}
+
+// drainResult applies any pending move computed off the main goroutine, ignoring
+// results from a game that was restarted while the worker was running.
+func (u *GameUI) drainResult() error {
 	select {
 	case r := <-u.resultCh:
 		if r.gen != u.gen {
-			break // stale result from a game that was restarted; discard
+			return nil // stale result from a game that was restarted; discard
 		}
 		u.thinking = false
 		if r.err != nil {
@@ -145,33 +164,42 @@ func (u *GameUI) Update() error {
 		}
 	default:
 	}
+	return nil
+}
 
-	// When recording, finalize and exit once the final frame is captured.
-	if u.rec != nil {
-		if u.recSaved {
-			return ebiten.Termination
+// finalizeRecording writes the GIF and signals termination once the final frame
+// is captured. It must only be called when recording is active.
+func (u *GameUI) finalizeRecording() error {
+	if u.recSaved {
+		return ebiten.Termination
+	}
+	if u.game.Over() && u.recFinalReady {
+		if err := u.rec.save(); err != nil {
+			return err
 		}
-		if u.game.Over() && u.recFinalReady {
-			if err := u.rec.save(); err != nil {
-				return err
-			}
-			u.recSaved = true
-			return ebiten.Termination
-		}
+		u.recSaved = true
+		return ebiten.Termination
 	}
+	return nil
+}
 
-	if u.thinking || u.game.Over() {
-		return nil
+// readyToStep reports whether a new move should be computed this frame.
+func (u *GameUI) readyToStep() bool {
+	switch {
+	case u.thinking || u.game.Over():
+		return false
+	case u.paused && !u.stepOnce:
+		return false
+	case !u.stepOnce && time.Since(u.lastMoveTime) < u.cfg.MoveDelay:
+		return false
+	default:
+		return true
 	}
-	if u.paused && !u.stepOnce {
-		return nil
-	}
-	if !u.stepOnce && time.Since(u.lastMoveTime) < u.cfg.MoveDelay {
-		return nil
-	}
-	u.stepOnce = false
+}
 
-	// Compute the next move off the main goroutine so drawing keeps ticking.
+// startThinking computes the next move off the main goroutine so drawing keeps
+// ticking while an agent searches.
+func (u *GameUI) startThinking() {
 	u.thinking = true
 	gen := u.gen
 	go func() {
@@ -180,7 +208,6 @@ func (u *GameUI) Update() error {
 		ev, ok, err := u.game.Step(ctx)
 		u.resultCh <- stepResult{ev: ev, ok: ok, err: err, gen: gen}
 	}()
-	return nil
 }
 
 // handleInput processes keyboard controls.

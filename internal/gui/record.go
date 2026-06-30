@@ -3,6 +3,7 @@
 package gui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -49,13 +50,16 @@ func (r *recorder) save() error {
 	}
 	f, err := os.Create(r.path)
 	if err != nil {
-		return err
+		return fmt.Errorf("create gif: %w", err)
 	}
 	if err := gif.EncodeAll(f, &gif.GIF{Image: r.frames, Delay: r.delays}); err != nil {
 		_ = f.Close()
-		return err
+		return fmt.Errorf("encode gif: %w", err)
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close gif: %w", err)
+	}
+	return nil
 }
 
 // demoPalette holds blends between the handful of colors the board uses, so

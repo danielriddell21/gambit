@@ -7,8 +7,6 @@ import (
 	"github.com/danielriddell21/gambit/internal/agent"
 )
 
-// TestIterativePlaysLegalMoves drives the iterative-deepening agent; Step errors
-// on any illegal move, so reaching the ply cap without error asserts correctness.
 func TestIterativePlaysLegalMoves(t *testing.T) {
 	white, err := agent.New("iterative", agent.Options{Seed: 1, Depth: 3})
 	if err != nil {

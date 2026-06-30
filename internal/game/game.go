@@ -1,8 +1,3 @@
-// Package game orchestrates a chess game between two agents: it alternates
-// turns, validates and applies moves, tracks game-history draw conditions
-// (threefold repetition and the fifty-move rule), and emits a move event per
-// ply. It is deliberately decoupled from any UI so the same logic drives both
-// the headless runner and the Ebiten GUI.
 package game
 
 import (
@@ -13,33 +8,29 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// Players holds the agent controlling each color.
 type Players struct {
 	White agent.Agent
 	Black agent.Agent
 }
 
-// MoveEvent describes a single completed ply.
 type MoveEvent struct {
-	Ply       int         // 1-based half-move number
-	Mover     chess.Color // side that made the move
-	AgentName string      // strategy that chose it
-	Move      chess.Move  // the move played
-	SAN       string      // human-readable notation
-	FEN       string      // resulting position
+	Ply       int
+	Mover     chess.Color
+	AgentName string
+	Move      chess.Move
+	SAN       string
+	FEN       string
 }
 
-// Game tracks the state of a single agent-vs-agent game.
 type Game struct {
 	board   *chess.Board
 	players Players
-	history map[uint64]int // Zobrist hash -> times reached, for threefold
+	history map[uint64]int
 	moves   []chess.Move
 	result  chess.Result
 	reason  chess.DrawReason
 }
 
-// New creates a game. If start is nil the standard initial position is used.
 func New(p Players, start *chess.Board) *Game {
 	if start == nil {
 		start = chess.NewStartingBoard()
@@ -53,19 +44,14 @@ func New(p Players, start *chess.Board) *Game {
 	return g
 }
 
-// Board returns the live board. Callers (e.g. the GUI) must only read it.
 func (g *Game) Board() *chess.Board { return g.board }
 
-// Result returns the current result (InProgress until the game ends).
 func (g *Game) Result() chess.Result { return g.result }
 
-// DrawReason returns why the game was drawn, if it was.
 func (g *Game) DrawReason() chess.DrawReason { return g.reason }
 
-// Moves returns the moves played so far.
 func (g *Game) Moves() []chess.Move { return g.moves }
 
-// AgentName returns the name of the agent playing the given color.
 func (g *Game) AgentName(c chess.Color) string {
 	if c == chess.White {
 		return g.players.White.Name()
@@ -73,7 +59,6 @@ func (g *Game) AgentName(c chess.Color) string {
 	return g.players.Black.Name()
 }
 
-// Over reports whether the game has finished.
 func (g *Game) Over() bool { return g.result != chess.InProgress }
 
 func (g *Game) current() agent.Agent {
@@ -83,10 +68,6 @@ func (g *Game) current() agent.Agent {
 	return g.players.Black
 }
 
-// Step plays exactly one ply: it asks the side-to-move's agent for a move,
-// validates it, applies it and updates the result. The boolean is false when
-// the game was already over. It is safe to drive from a GUI tick or a headless
-// loop.
 func (g *Game) Step(ctx context.Context) (MoveEvent, bool, error) {
 	if g.Over() {
 		return MoveEvent{}, false, nil
@@ -120,8 +101,6 @@ func (g *Game) Step(ctx context.Context) (MoveEvent, bool, error) {
 	return ev, true, nil
 }
 
-// Run plays the game to completion, invoking onMove (if non-nil) after each
-// ply. It returns the first error encountered, if any.
 func (g *Game) Run(ctx context.Context, onMove func(MoveEvent)) error {
 	for !g.Over() {
 		ev, ok, err := g.Step(ctx)
@@ -147,8 +126,6 @@ func (g *Game) isLegal(m chess.Move) bool {
 	return false
 }
 
-// updateResult sets the game result after a move, checking position-derivable
-// outcomes first, then the history-dependent draw rules.
 func (g *Game) updateResult() {
 	if res, reason := g.board.Status(); res != chess.InProgress {
 		g.result = res

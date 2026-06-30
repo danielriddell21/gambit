@@ -8,10 +8,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Available reports whether the Ebiten window is compiled in.
 func Available() bool { return true }
 
-// Run renders the game in an Ebiten window.
 func Run(cfg Config) error {
 	u, err := newGameUI(cfg)
 	if err != nil {

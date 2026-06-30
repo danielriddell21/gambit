@@ -7,8 +7,6 @@ import (
 	"github.com/danielriddell21/gambit/internal/agent"
 )
 
-// TestGreedyPlaysLegalMoves drives the greedy agent; Step errors on any illegal
-// move, so reaching the ply cap without error asserts correctness.
 func TestGreedyPlaysLegalMoves(t *testing.T) {
 	white, err := agent.New("greedy", agent.Options{Seed: 1})
 	if err != nil {

@@ -15,8 +15,6 @@ func init() {
 	})
 }
 
-// greedyAgent plays the move with the best immediate evaluation (a one-ply
-// search), breaking ties randomly. A simple baseline stronger than random.
 type greedyAgent struct {
 	rng *rand.Rand
 }

@@ -1,6 +1,3 @@
-// Package assets embeds binary assets (currently the font used to render chess
-// pieces) so they can be shared by the GUI and the demo generator without a
-// separate copy.
 package assets
 
 import _ "embed"

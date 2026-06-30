@@ -1,4 +1,3 @@
-// Package cli wires together the root Cobra command for gambit.
 package cli
 
 import (
@@ -14,7 +13,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// config holds the resolved command-line options for a run.
 type config struct {
 	white, black string
 	depth        int
@@ -27,7 +25,6 @@ type config struct {
 	square       int
 }
 
-// Execute builds and runs the root command. Returns non-nil on error.
 func Execute(version string) error {
 	c := config{}
 	root := &cobra.Command{

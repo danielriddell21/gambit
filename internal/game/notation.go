@@ -6,9 +6,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// SAN renders a move in Standard Algebraic Notation (e.g. "Nf3", "exd5",
-// "O-O", "e8=Q+", "Qxh7#"). It must be called on the position *before* the move
-// is made, since disambiguation and the check/mate suffix depend on it.
 func SAN(b *chess.Board, m chess.Move) string {
 	switch m.Flag() {
 	case chess.FlagCastleKingside:
@@ -45,8 +42,6 @@ func SAN(b *chess.Board, m chess.Move) string {
 	return sb.String()
 }
 
-// disambiguation returns the minimal origin qualifier needed when more than one
-// piece of the same type can move to the destination.
 func disambiguation(b *chess.Board, m chess.Move, pt chess.PieceType) string {
 	from := m.From()
 	var others []chess.Square
@@ -79,8 +74,6 @@ func disambiguation(b *chess.Board, m chess.Move, pt chess.PieceType) string {
 	}
 }
 
-// checkSuffix returns "#" if the move delivers checkmate, "+" for a check, or
-// "" otherwise.
 func checkSuffix(b *chess.Board, m chess.Move) string {
 	nb := b.ApplyMove(m)
 	if !nb.InCheck() {

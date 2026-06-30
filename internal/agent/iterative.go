@@ -17,9 +17,6 @@ func init() {
 	})
 }
 
-// iterativeAgent runs iterative-deepening negamax, adopting the best move from
-// the deepest depth that completed before the context deadline. With no
-// deadline (headless) it simply searches to maxDepth.
 type iterativeAgent struct {
 	maxDepth int
 	eval     eval.Func
@@ -49,7 +46,6 @@ func (a *iterativeAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 	return best, nil //nolint:nilerr // on ctx timeout, keep the best move found so far
 }
 
-// moveToFront moves m to the front of moves, preserving the order of the rest.
 func moveToFront(moves []chess.Move, m chess.Move) {
 	for i, mv := range moves {
 		if mv == m {

@@ -8,9 +8,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// TestRandomGamesTerminate runs many random-vs-random games and asserts every
-// one ends with a valid result and that no illegal move is ever applied. This
-// fuzzes the whole engine + game stack without the GUI.
 func TestRandomGamesTerminate(t *testing.T) {
 	for seed := int64(0); seed < 40; seed++ {
 		white, err := agent.New("random", agent.Options{Seed: seed})
@@ -34,7 +31,6 @@ func TestRandomGamesTerminate(t *testing.T) {
 	}
 }
 
-// TestMinimaxFindsMateInOne checks the alpha-beta agent plays a forced mate.
 func TestMinimaxFindsMateInOne(t *testing.T) {
 	// White to move: Qd8# is mate (back-rank).
 	b, err := chess.ParseFEN("6k1/5ppp/8/8/8/8/8/3Q2K1 w - - 0 1")
@@ -54,7 +50,6 @@ func TestMinimaxFindsMateInOne(t *testing.T) {
 	}
 }
 
-// TestSAN spot-checks notation rendering.
 func TestSAN(t *testing.T) {
 	cases := []struct {
 		fen  string

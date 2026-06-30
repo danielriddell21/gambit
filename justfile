@@ -44,6 +44,10 @@ perft:
 lint:
     golangci-lint run
 
+# full gate: lint + test + build. all must pass before committing
+[group('dev')]
+ci: lint test build
+
 # format the code
 [group('dev')]
 fmt:

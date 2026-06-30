@@ -18,12 +18,19 @@ just test       # run unit tests
 just test-race  # run tests with the race detector
 just perft      # run the move-generation perft checks
 just lint       # golangci-lint
+just ci         # lint + test + build
 just fmt        # gofumpt
 just tidy       # go mod tidy
 just demos      # regenerate demo assets
 ```
 
-Run `just --list` to see every recipe. Run `just lint` and `just test` before each commit. CI runs lint + test + build on every push to `trunk` and every pull request targeting `trunk`.
+Run `just --list` to see every recipe. Run `just ci` (lint + test + build) before each commit. CI runs the same gate on every push to `trunk` and every pull request targeting `trunk`.
+
+## Conventions
+
+The CLI entrypoint and Ebiten GUI structure is shared across the tool family
+(unum is the CLI reference; rubix/vivarium the GUI references). See
+[CONVENTIONS.md](CONVENTIONS.md).
 
 ## Project layout
 
@@ -32,7 +39,9 @@ gambit is both a CLI and a reusable chess library.
 ```
 pkg/chess/       public chess library
 cmd/gambit/      CLI entry point (headless + optional Ebiten GUI)
-internal/        implementation packages (agents, game, ui)
+internal/cli/    cobra root + the GUI seam wiring
+internal/gui/    Ebiten window (built with the `ebiten` tag; headless fallback otherwise)
+internal/        implementation packages (agents, game)
 docs/            documentation
 ```
 

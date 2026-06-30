@@ -19,7 +19,7 @@ just test-race  # run tests with the race detector
 just perft      # run the move-generation perft checks
 just lint       # golangci-lint
 just ci         # lint + test + build
-just fmt        # gofumpt
+just fmt        # golangci-lint fmt (gofumpt + goimports)
 just tidy       # go mod tidy
 just demos      # regenerate demo assets
 ```

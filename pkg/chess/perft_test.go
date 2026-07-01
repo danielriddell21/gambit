@@ -2,25 +2,6 @@ package chess
 
 import "testing"
 
-// Perft counts the leaf nodes of the move tree to the given depth. It is the
-// standard correctness check for move generation.
-func Perft(b *Board, depth int) uint64 {
-	if depth == 0 {
-		return 1
-	}
-	moves := b.GenerateMoves(nil)
-	if depth == 1 {
-		return uint64(len(moves))
-	}
-	var nodes uint64
-	for _, m := range moves {
-		u := b.MakeMove(m)
-		nodes += Perft(b, depth-1)
-		b.UnmakeMove(m, u)
-	}
-	return nodes
-}
-
 func perftFromFEN(t *testing.T, fen string, depth int, want uint64) {
 	t.Helper()
 	b, err := ParseFEN(fen)
@@ -86,4 +67,21 @@ func TestPerftPosition5(t *testing.T) {
 	perftFromFEN(t, fen, 1, 44)
 	perftFromFEN(t, fen, 2, 1486)
 	perftFromFEN(t, fen, 3, 62379)
+}
+
+func BenchmarkMovegen(b *testing.B) {
+	board := NewStartingBoard()
+	buf := make([]Move, 0, 64)
+	b.ReportAllocs()
+	for b.Loop() {
+		buf = board.GenerateMoves(buf[:0])
+	}
+	_ = buf
+}
+
+func BenchmarkPerft(b *testing.B) {
+	board := NewStartingBoard()
+	for b.Loop() {
+		Perft(board, 4)
+	}
 }

@@ -15,8 +15,6 @@ func init() {
 	})
 }
 
-// greedyAgent plays the move with the best immediate evaluation (a one-ply
-// search), breaking ties randomly. A simple baseline stronger than random.
 type greedyAgent struct {
 	rng *rand.Rand
 }
@@ -34,8 +32,11 @@ func (a *greedyAgent) SelectMove(_ context.Context, b *chess.Board) (chess.Move,
 	ties := 0
 	for _, m := range moves {
 		// eval.Material is from the side-to-move's perspective; after our move
-		// that is the opponent, so negate to get the score for us.
-		score := -eval.Material(b.ApplyMove(m))
+		// that is the opponent, so negate to get the score for us. Make and
+		// unmake in place rather than cloning the board for each candidate.
+		u := b.MakeMove(m)
+		score := -eval.Material(b)
+		b.UnmakeMove(m, u)
 		switch {
 		case score > bestScore:
 			bestScore, best, ties = score, m, 1

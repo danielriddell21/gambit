@@ -1,6 +1,6 @@
 //go:build ebiten
 
-package ui
+package gui
 
 import (
 	"bytes"
@@ -12,9 +12,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// solidGlyph maps a piece type to its filled Unicode chess glyph (the U+265A..F
-// block). We use the solid glyphs for both colors and distinguish color by
-// tint, since the outlined "white" glyphs render poorly on light squares.
 var solidGlyph = map[chess.PieceType]rune{
 	chess.King:   '♚',
 	chess.Queen:  '♛',
@@ -24,7 +21,6 @@ var solidGlyph = map[chess.PieceType]rune{
 	chess.Pawn:   '♟',
 }
 
-// newFace builds a text face from the embedded font at the given pixel size.
 func newFace(size float64) (*text.GoTextFace, error) {
 	src, err := text.NewGoTextFaceSource(bytes.NewReader(assets.Font))
 	if err != nil {

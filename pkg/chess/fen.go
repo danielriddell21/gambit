@@ -74,32 +74,38 @@ func parseFENPlacement(b *Board, placement string) error {
 	}
 	// FEN lists ranks from 8 down to 1.
 	for i, rankStr := range ranks {
-		rank := 7 - i
-		file := 0
-		for j := 0; j < len(rankStr); j++ {
-			ch := rankStr[j]
-			switch {
-			case ch >= '1' && ch <= '8':
-				file += int(ch - '0')
-			default:
-				pt, ok := fenPieceType[lower(ch)]
-				if !ok {
-					return fmt.Errorf("chess: invalid FEN piece %q", string(ch))
-				}
-				if file > 7 {
-					return fmt.Errorf("chess: too many squares in rank %q", rankStr)
-				}
-				color := White
-				if ch >= 'a' && ch <= 'z' {
-					color = Black
-				}
-				b.setPiece(NewSquare(file, rank), MakePiece(color, pt))
-				file++
-			}
+		if err := parseFENRank(b, rankStr, 7-i); err != nil {
+			return err
 		}
-		if file != 8 {
-			return fmt.Errorf("chess: rank %q does not fill 8 files", rankStr)
+	}
+	return nil
+}
+
+// parseFENRank places the pieces of one FEN rank string onto the board.
+func parseFENRank(b *Board, rankStr string, rank int) error {
+	file := 0
+	for j := 0; j < len(rankStr); j++ {
+		ch := rankStr[j]
+		if ch >= '1' && ch <= '8' {
+			file += int(ch - '0')
+			continue
 		}
+		pt, ok := fenPieceType[lower(ch)]
+		if !ok {
+			return fmt.Errorf("chess: invalid FEN piece %q", string(ch))
+		}
+		if file > 7 {
+			return fmt.Errorf("chess: too many squares in rank %q", rankStr)
+		}
+		color := White
+		if ch >= 'a' && ch <= 'z' {
+			color = Black
+		}
+		b.setPiece(NewSquare(file, rank), MakePiece(color, pt))
+		file++
+	}
+	if file != 8 {
+		return fmt.Errorf("chess: rank %q does not fill 8 files", rankStr)
 	}
 	return nil
 }

@@ -9,8 +9,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// maxRolloutPlies caps a random playout so simulations always terminate; at the
-// cap the position is estimated with the static evaluation.
 const maxRolloutPlies = 40
 
 func init() {
@@ -27,9 +25,6 @@ func init() {
 	})
 }
 
-// mctsAgent plays by Monte Carlo Tree Search with UCT selection and random
-// rollouts. No learning is involved — it is pure search, budgeted by an
-// iteration count or the context deadline (whichever comes first).
 type mctsAgent struct {
 	iterations int
 	rng        *rand.Rand
@@ -38,10 +33,10 @@ type mctsAgent struct {
 type mctsNode struct {
 	board    *chess.Board
 	parent   *mctsNode
-	move     chess.Move // move from parent that reached this node
+	move     chess.Move
 	untried  []chess.Move
 	children []*mctsNode
-	wins     float64 // results from the perspective of the player who moved here
+	wins     float64
 	visits   int
 }
 
@@ -76,7 +71,6 @@ func (a *mctsAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.Move,
 	return best.move, nil
 }
 
-// treePolicy walks down the tree, expanding the first node with untried moves.
 func (a *mctsAgent) treePolicy(node *mctsNode) *mctsNode {
 	for {
 		if len(node.untried) > 0 {
@@ -98,8 +92,6 @@ func (a *mctsAgent) expand(node *mctsNode) *mctsNode {
 	return child
 }
 
-// bestUCT picks the child maximizing the UCT score, evaluated from the
-// perspective of the player to move at node (the player choosing the child).
 func bestUCT(node *mctsNode) *mctsNode {
 	const c = math.Sqrt2
 	logN := math.Log(float64(node.visits))
@@ -115,8 +107,6 @@ func bestUCT(node *mctsNode) *mctsNode {
 	return best
 }
 
-// rollout plays random moves to a terminal position or the ply cap, returning
-// the result from White's perspective in [0,1].
 func (a *mctsAgent) rollout(b *chess.Board) float64 {
 	sim := b.Clone()
 	for ply := 0; ply < maxRolloutPlies; ply++ {
@@ -130,8 +120,6 @@ func (a *mctsAgent) rollout(b *chess.Board) float64 {
 	return sigmoid(whiteCentipawns(sim))
 }
 
-// backpropagate updates visit and win counts up to the root. A node's wins are
-// stored from the perspective of the player who moved into it.
 func backpropagate(node *mctsNode, whiteResult float64) {
 	for n := node; n != nil; n = n.parent {
 		n.visits++

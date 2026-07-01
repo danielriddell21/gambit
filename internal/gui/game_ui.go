@@ -1,9 +1,6 @@
 //go:build ebiten
 
-// Package ui renders an agent-vs-agent game with Ebiten. It reads board state
-// from pkg/chess for drawing and runs each agent's search on a worker goroutine
-// so the window stays responsive while agents think.
-package ui
+package gui
 
 import (
 	"context"
@@ -19,54 +16,23 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// Piece tint colors, reused for the info bar and banner so the recorder palette
-// stays small.
 var (
 	pieceWhite = color.RGBA{R: 0xf5, G: 0xf5, B: 0xf0, A: 0xff}
 	pieceBlack = color.RGBA{R: 0x20, G: 0x20, B: 0x24, A: 0xff}
 )
 
-// Speed bounds for the +/- controls.
 const (
 	minDelay = 10 * time.Millisecond
 	maxDelay = 3 * time.Second
 )
 
-// Config controls the look and pacing of the GUI.
-type Config struct {
-	SquareSize   int
-	LightSquare  color.RGBA
-	DarkSquare   color.RGBA
-	MoveDelay    time.Duration // pause between moves so the game is watchable
-	ThinkTimeout time.Duration // hard cap on an agent's thinking time
-
-	// RecordPath, when set, records the rendered game to an animated GIF at that
-	// path and exits when the game ends. RecordDelay is the per-frame delay in
-	// hundredths of a second.
-	RecordPath  string
-	RecordDelay int
-}
-
-// DefaultConfig returns sensible defaults.
-func DefaultConfig() Config {
-	return Config{
-		SquareSize:   80,
-		LightSquare:  color.RGBA{R: 0xec, G: 0xd9, B: 0xb6, A: 0xff},
-		DarkSquare:   color.RGBA{R: 0xa9, G: 0x7a, B: 0x55, A: 0xff},
-		MoveDelay:    400 * time.Millisecond,
-		ThinkTimeout: 10 * time.Second,
-		RecordDelay:  70,
-	}
-}
-
 type stepResult struct {
 	ev  game.MoveEvent
 	ok  bool
 	err error
-	gen int // generation this worker was launched under (for restart)
+	gen int
 }
 
-// GameUI is the ebiten.Game driving an agent-vs-agent match.
 type GameUI struct {
 	game      *game.Game
 	newGame   func() *game.Game
@@ -74,30 +40,28 @@ type GameUI struct {
 	cfg       Config
 	barHeight int
 
-	face       text.Face // piece glyphs
-	barFace    text.Face // info bar text
-	bannerFace text.Face // game-over banner
+	face       text.Face
+	barFace    text.Face
+	bannerFace text.Face
 
-	snapshot     [64]chess.Piece // cached board, only mutated on the main goroutine
+	snapshot     [64]chess.Piece
 	thinking     bool
 	resultCh     chan stepResult
 	lastMoveTime time.Time
 	finished     bool
 
-	// Controls.
 	paused   bool
 	stepOnce bool
 	flipped  bool
-	gen      int // bumped on restart; stale worker results are discarded
+	gen      int
 
-	rec           *recorder // nil unless recording a GIF
-	needCapture   bool      // capture a frame on the next Draw
-	recFinalReady bool      // the final frame has been captured
-	recSaved      bool      // the GIF has been written
+	rec           *recorder
+	needCapture   bool
+	recFinalReady bool
+	recSaved      bool
 }
 
-// New builds a GameUI. newGame rebuilds the game when the user restarts (R).
-func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config) (*GameUI, error) {
+func newGameUI(cfg Config) (*GameUI, error) {
 	sq := float64(cfg.SquareSize)
 	face, err := newFace(sq * 0.8)
 	if err != nil {
@@ -117,9 +81,9 @@ func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config
 	}
 
 	u := &GameUI{
-		game:       g,
-		newGame:    newGame,
-		log:        log,
+		game:       cfg.Game,
+		newGame:    cfg.NewGame,
+		log:        cfg.Logger,
 		cfg:        cfg,
 		barHeight:  barHeight,
 		face:       face,
@@ -139,22 +103,36 @@ func New(g *game.Game, newGame func() *game.Game, log *applog.Logger, cfg Config
 	return u, nil
 }
 
-// refreshSnapshot copies the live board into the draw snapshot. Must be called
-// only on the main (Update) goroutine while no worker is running.
 func (u *GameUI) refreshSnapshot() {
 	u.game.Board().Each(func(s chess.Square, p chess.Piece) {
 		u.snapshot[s] = p
 	})
 }
 
-// Update advances the game without ever blocking the main loop.
 func (u *GameUI) Update() error {
 	u.handleInput()
 
+	if err := u.drainResult(); err != nil {
+		return err
+	}
+	if u.rec != nil {
+		if err := u.finalizeRecording(); err != nil {
+			return err
+		}
+	}
+	if !u.readyToStep() {
+		return nil
+	}
+	u.stepOnce = false
+	u.startThinking()
+	return nil
+}
+
+func (u *GameUI) drainResult() error {
 	select {
 	case r := <-u.resultCh:
 		if r.gen != u.gen {
-			break // stale result from a game that was restarted; discard
+			return nil // stale result from a game that was restarted; discard
 		}
 		u.thinking = false
 		if r.err != nil {
@@ -174,33 +152,37 @@ func (u *GameUI) Update() error {
 		}
 	default:
 	}
+	return nil
+}
 
-	// When recording, finalize and exit once the final frame is captured.
-	if u.rec != nil {
-		if u.recSaved {
-			return ebiten.Termination
+func (u *GameUI) finalizeRecording() error {
+	if u.recSaved {
+		return ebiten.Termination
+	}
+	if u.game.Over() && u.recFinalReady {
+		if err := u.rec.save(); err != nil {
+			return err
 		}
-		if u.game.Over() && u.recFinalReady {
-			if err := u.rec.save(); err != nil {
-				return err
-			}
-			u.recSaved = true
-			return ebiten.Termination
-		}
+		u.recSaved = true
+		return ebiten.Termination
 	}
+	return nil
+}
 
-	if u.thinking || u.game.Over() {
-		return nil
+func (u *GameUI) readyToStep() bool {
+	switch {
+	case u.thinking || u.game.Over():
+		return false
+	case u.paused && !u.stepOnce:
+		return false
+	case !u.stepOnce && time.Since(u.lastMoveTime) < u.cfg.MoveDelay:
+		return false
+	default:
+		return true
 	}
-	if u.paused && !u.stepOnce {
-		return nil
-	}
-	if !u.stepOnce && time.Since(u.lastMoveTime) < u.cfg.MoveDelay {
-		return nil
-	}
-	u.stepOnce = false
+}
 
-	// Compute the next move off the main goroutine so drawing keeps ticking.
+func (u *GameUI) startThinking() {
 	u.thinking = true
 	gen := u.gen
 	go func() {
@@ -209,10 +191,8 @@ func (u *GameUI) Update() error {
 		ev, ok, err := u.game.Step(ctx)
 		u.resultCh <- stepResult{ev: ev, ok: ok, err: err, gen: gen}
 	}()
-	return nil
 }
 
-// handleInput processes keyboard controls.
 func (u *GameUI) handleInput() {
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
 		u.paused = !u.paused
@@ -234,8 +214,6 @@ func (u *GameUI) handleInput() {
 	}
 }
 
-// restart begins a fresh game. The generation bump makes any in-flight worker's
-// result get discarded when it arrives.
 func (u *GameUI) restart() {
 	u.gen++
 	u.game = u.newGame()
@@ -258,7 +236,6 @@ func clampDelay(d time.Duration) time.Duration {
 	}
 }
 
-// Draw paints the board, pieces, info bar and (when finished) the banner.
 func (u *GameUI) Draw(screen *ebiten.Image) {
 	u.drawBoard(screen)
 	u.drawPieces(screen)
@@ -276,12 +253,10 @@ func (u *GameUI) Draw(screen *ebiten.Image) {
 	}
 }
 
-// Layout fixes the logical screen size to the board plus the info bar.
 func (u *GameUI) Layout(_, _ int) (int, int) {
 	return u.WindowSize()
 }
 
-// WindowSize returns the pixel size of the window (board + info bar).
 func (u *GameUI) WindowSize() (int, int) {
 	return u.boardSize(), u.boardSize() + u.barHeight
 }

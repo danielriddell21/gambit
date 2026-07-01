@@ -23,9 +23,6 @@ func init() {
 	})
 }
 
-// alphaBetaAgent searches with negamax + alpha-beta pruning to a fixed depth and
-// evaluates leaves with a static evaluation function. It is the baseline
-// "real" player and the template future depth-limited strategies follow.
 type alphaBetaAgent struct {
 	depth int
 	eval  eval.Func
@@ -40,14 +37,11 @@ func (a *alphaBetaAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.
 	}
 	orderMoves(b, moves)
 
-	best, _ := searchRoot(ctx, b, a.depth, a.eval, moves)
+	best := searchRoot(ctx, b, a.depth, a.eval, moves)
 	return best, nil
 }
 
-// searchRoot runs negamax over the (pre-ordered) root moves and returns the best
-// move and its score. It stops early on cancellation, keeping the best move
-// found so far.
-func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, moves []chess.Move) (chess.Move, int) {
+func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, moves []chess.Move) chess.Move {
 	best := moves[0]
 	alpha := -infinity
 	for _, m := range moves {
@@ -62,12 +56,9 @@ func searchRoot(ctx context.Context, b *chess.Board, depth int, e eval.Func, mov
 			best = m
 		}
 	}
-	return best, alpha
+	return best
 }
 
-// negamax returns the value of the position from the side-to-move's perspective,
-// using e to evaluate leaves. It is shared by the fixed-depth and
-// iterative-deepening agents.
 func negamax(ctx context.Context, b *chess.Board, depth, alpha, beta int, e eval.Func) int {
 	if ctx.Err() != nil || depth == 0 {
 		return e(b)
@@ -101,8 +92,6 @@ func negamax(ctx context.Context, b *chess.Board, depth, alpha, beta int, e eval
 	return best
 }
 
-// orderMoves sorts captures and promotions first (MVV-LVA style) to improve
-// alpha-beta pruning.
 func orderMoves(b *chess.Board, moves []chess.Move) {
 	sort.SliceStable(moves, func(i, j int) bool {
 		return moveScore(b, moves[i]) > moveScore(b, moves[j])

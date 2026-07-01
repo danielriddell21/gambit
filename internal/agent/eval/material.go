@@ -1,15 +1,9 @@
-// Package eval provides static evaluation functions for chess positions. It is
-// kept separate from the search agents so evaluation and search can evolve
-// independently.
 package eval
 
 import "github.com/danielriddell21/gambit/pkg/chess"
 
-// Func scores a position in centipawns from the perspective of the side to
-// move: a positive value favors the side to move.
 type Func func(b *chess.Board) int
 
-// pieceValue is the centipawn value of each piece type.
 var pieceValue = [...]int{
 	chess.Pawn:   100,
 	chess.Knight: 320,
@@ -19,9 +13,6 @@ var pieceValue = [...]int{
 	chess.King:   0,
 }
 
-// Material scores a position by material balance plus a small piece-square
-// preference for central development. The result is from the perspective of the
-// side to move.
 func Material(b *chess.Board) int {
 	score := 0
 	b.Each(func(s chess.Square, p chess.Piece) {
@@ -41,8 +32,6 @@ func Material(b *chess.Board) int {
 	return score
 }
 
-// pst returns a small positional bonus encouraging knights, bishops and pawns
-// toward the center. Values are symmetric, mirrored by color.
 func pst(t chess.PieceType, s chess.Square, c chess.Color) int {
 	file, rank := s.File(), s.Rank()
 	if c == chess.Black {

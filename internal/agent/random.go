@@ -8,7 +8,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// errNoMoves is returned when an agent is asked to move in a terminal position.
 var errNoMoves = errors.New("agent: no legal moves")
 
 func init() {
@@ -18,8 +17,6 @@ func init() {
 	})
 }
 
-// randomAgent plays a uniformly random legal move. It is the baseline opponent
-// for evaluating every other strategy.
 type randomAgent struct {
 	rng *rand.Rand
 }

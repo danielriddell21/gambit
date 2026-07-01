@@ -7,8 +7,6 @@ import (
 	"github.com/danielriddell21/gambit/internal/agent"
 )
 
-// TestMCTSPlaysLegalMoves drives the MCTS agent; Step errors on any illegal
-// move, so reaching the ply cap without error asserts correctness.
 func TestMCTSPlaysLegalMoves(t *testing.T) {
 	white, err := agent.New("mcts", agent.Options{Seed: 1, Iterations: 300})
 	if err != nil {

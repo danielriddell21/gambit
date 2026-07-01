@@ -72,8 +72,27 @@ func (b *Board) IsStalemate() bool {
 // force checkmate (K vs K, K+minor vs K, and K+B vs K+B with same-colored
 // bishops are treated as insufficient).
 func (b *Board) IsInsufficientMaterial() bool {
-	var knights, bishops int
-	bishopColors := 0
+	knights, bishops, bishopColors, hasMajor := b.minorMaterial()
+	if hasMajor {
+		return false
+	}
+
+	switch {
+	case knights == 0 && bishops == 0:
+		return true // K vs K
+	case knights == 1 && bishops == 0:
+		return true // K+N vs K
+	case knights == 0 && bishops >= 1 && bishopColors != 3:
+		return true // only bishops, all on one color complex
+	default:
+		return false
+	}
+}
+
+// minorMaterial tallies the knights and bishops on the board (and the colour
+// complexes the bishops occupy), reporting whether either side has a pawn, rook,
+// or queen — material enough to force mate.
+func (b *Board) minorMaterial() (knights, bishops, bishopColors int, hasMajor bool) {
 	for s := Square(0); s < 64; s++ {
 		p := b.squares[s]
 		if p.IsEmpty() {
@@ -93,20 +112,10 @@ func (b *Board) IsInsufficientMaterial() bool {
 			}
 		default:
 			// any pawn, rook or queen is sufficient material
-			return false
+			return knights, bishops, bishopColors, true
 		}
 	}
-
-	switch {
-	case knights == 0 && bishops == 0:
-		return true // K vs K
-	case knights == 1 && bishops == 0:
-		return true // K+N vs K
-	case knights == 0 && bishops >= 1 && bishopColors != 3:
-		return true // only bishops, all on one color complex
-	default:
-		return false
-	}
+	return knights, bishops, bishopColors, false
 }
 
 // Status returns the outcome derivable from the current position alone

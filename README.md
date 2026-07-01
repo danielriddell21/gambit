@@ -1,5 +1,7 @@
 # gambit
 
+*n.* an opening that sacrifices material for position. Also: two bots arguing in algebraic notation.
+
 [![CI](https://github.com/danielriddell21/gambit/actions/workflows/ci.yaml/badge.svg)](https://github.com/danielriddell21/gambit/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/danielriddell21/gambit/graph/badge.svg)](https://codecov.io/gh/danielriddell21/gambit)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=danielriddell21_gambit&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=danielriddell21_gambit)
@@ -25,10 +27,9 @@ brew install --cask danielriddell21/tap/gambit  # native macOS GUI window
 - `pkg/chess` — reusable chess engine (board, moves, legality, FEN, results). The only public package.
 - `internal/agent` — pluggable `Agent` interface + the `random` and `minimax` strategies.
 - `internal/game` — turn orchestration, draw detection, SAN.
-- `internal/ui` — Ebiten rendering.
+- `internal/gui` — Ebiten window + the `Run`/`Available` seam (headless fallback without the `ebiten` tag).
 
-## Usage
-
+## Quick start
 Needs Go 1.26.3, [`just`](https://github.com/casey/just), and (for the GUI)
 Ebiten's [system deps](https://ebitengine.org/en/documents/install.html).
 
@@ -39,7 +40,7 @@ just test                      # tests        just perft   # move-gen correctnes
 just lint                      # golangci-lint just demos   # regenerate demo GIFs
 ```
 
-Flags: `-white`, `-black`, `-depth`, `-seed`, `-fen`, `-delay`.
+Flags: `--white`, `--black`, `--depth`, `--seed`, `--fen`, `--delay`.
 
 <details>
 <summary>Linux: OpenGL/X11 libraries</summary>
@@ -57,3 +58,7 @@ Implement `agent.Agent` and `agent.Register` it in an `init` — the game loop a
 GUI need no changes. `Board.MakeMove`/`UnmakeMove` (for alpha-beta) and
 `Board.ApplyMove` (clone, for keeping many positions alive) are both available,
 and the headless build batches games with no display.
+
+## Documentation
+
+- [Demos](docs/demos.md)

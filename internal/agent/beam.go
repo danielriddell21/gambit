@@ -22,11 +22,6 @@ func init() {
 	})
 }
 
-// beamAgent performs beam search: it keeps the best `width` lines, expands all
-// of them each ply for `depth` plies, then plays the root move of the best line
-// at the final horizon. Scores are always from the root mover's perspective, so
-// the search is optimistic about the opponent — characteristic of beam search
-// rather than minimax, which makes it an interesting contrast to study.
 type beamAgent struct {
 	width int
 	depth int
@@ -35,8 +30,8 @@ type beamAgent struct {
 
 type beamState struct {
 	board *chess.Board
-	root  chess.Move // the root move this line started with
-	score int        // evaluation from the root mover's perspective
+	root  chess.Move
+	score int
 }
 
 func (a *beamAgent) Name() string { return "beam" }
@@ -77,11 +72,9 @@ func (a *beamAgent) SelectMove(ctx context.Context, b *chess.Board) (chess.Move,
 		}
 		beam = prune(next, a.width)
 	}
-	return beam[0].root, nil
+	return beam[0].root, nil //nolint:nilerr // on ctx timeout, return the best line found so far
 }
 
-// rootScore returns the evaluation from rootColor's perspective (eval is from
-// the side-to-move's perspective).
 func rootScore(b *chess.Board, rootColor chess.Color, e eval.Func) int {
 	s := e(b)
 	if b.SideToMove() != rootColor {
@@ -90,7 +83,6 @@ func rootScore(b *chess.Board, rootColor chess.Color, e eval.Func) int {
 	return s
 }
 
-// prune keeps the top-n states by score (descending).
 func prune(states []beamState, n int) []beamState {
 	sort.SliceStable(states, func(i, j int) bool {
 		return states[i].score > states[j].score

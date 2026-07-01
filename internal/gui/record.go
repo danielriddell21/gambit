@@ -1,8 +1,9 @@
 //go:build ebiten
 
-package ui
+package gui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -11,12 +12,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// recorder accumulates rendered frames and encodes them as an animated GIF. It
-// captures the real Ebiten output via Image.ReadPixels, so the demo matches the
-// window exactly.
 type recorder struct {
 	path   string
-	delay  int // per-frame delay in 1/100s
+	delay  int
 	frames []*image.Paletted
 	delays []int
 }
@@ -25,7 +23,6 @@ func newRecorder(path string, delay int) *recorder {
 	return &recorder{path: path, delay: delay}
 }
 
-// capture grabs the current screen image as one frame.
 func (r *recorder) capture(screen *ebiten.Image) {
 	b := screen.Bounds()
 	buf := make([]byte, 4*b.Dx()*b.Dy())
@@ -42,25 +39,24 @@ func (r *recorder) capture(screen *ebiten.Image) {
 	r.delays = append(r.delays, r.delay)
 }
 
-// save writes the accumulated frames to the GIF file, holding the last frame.
 func (r *recorder) save() error {
 	if len(r.delays) > 0 {
 		r.delays[len(r.delays)-1] = 400
 	}
 	f, err := os.Create(r.path)
 	if err != nil {
-		return err
+		return fmt.Errorf("create gif: %w", err)
 	}
 	if err := gif.EncodeAll(f, &gif.GIF{Image: r.frames, Delay: r.delays}); err != nil {
 		_ = f.Close()
-		return err
+		return fmt.Errorf("encode gif: %w", err)
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close gif: %w", err)
+	}
+	return nil
 }
 
-// demoPalette holds blends between the handful of colors the board uses, so
-// nearest-color mapping reproduces both the flat squares and the anti-aliased
-// glyph edges without dithering artifacts.
 var demoPalette = buildPalette()
 
 func buildPalette() color.Palette {

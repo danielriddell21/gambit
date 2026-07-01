@@ -7,8 +7,6 @@ import (
 	"github.com/danielriddell21/gambit/internal/agent"
 )
 
-// TestBeamPlaysLegalMoves drives the beam-search agent; Step errors on any
-// illegal move, so reaching the ply cap without error asserts correctness.
 func TestBeamPlaysLegalMoves(t *testing.T) {
 	white, err := agent.New("beam", agent.Options{Seed: 1, Depth: 4, Width: 6})
 	if err != nil {

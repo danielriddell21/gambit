@@ -1,6 +1,6 @@
 //go:build ebiten
 
-package ui
+package gui
 
 import (
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
-// drawBoard fills the 8x8 grid of light and dark squares.
 func (u *GameUI) drawBoard(screen *ebiten.Image) {
 	size := float32(u.cfg.SquareSize)
 	for rank := 0; rank < 8; rank++ {
@@ -29,7 +28,6 @@ func (u *GameUI) drawBoard(screen *ebiten.Image) {
 	}
 }
 
-// drawPieces draws every piece from the cached snapshot.
 func (u *GameUI) drawPieces(screen *ebiten.Image) {
 	for s := chess.Square(0); s < 64; s++ {
 		p := u.snapshot[s]
@@ -40,8 +38,6 @@ func (u *GameUI) drawPieces(screen *ebiten.Image) {
 	}
 }
 
-// drawPiece renders a single piece glyph centered in its square, with an
-// outline in the contrasting color so both colors read on any square.
 func (u *GameUI) drawPiece(screen *ebiten.Image, p chess.Piece, file, rank int) {
 	glyph := string(solidGlyph[p.Type()])
 
@@ -63,7 +59,6 @@ func (u *GameUI) drawPiece(screen *ebiten.Image, p chess.Piece, file, rank int) 
 	drawText(screen, glyph, u.face, cx, cy, fill)
 }
 
-// drawInfoBar draws the status/help strip below the board.
 func (u *GameUI) drawInfoBar(screen *ebiten.Image) {
 	boardSize := float32(u.boardSize())
 	vector.FillRect(screen, 0, boardSize, boardSize, float32(u.barHeight), u.cfg.DarkSquare, false)
@@ -86,8 +81,6 @@ func (u *GameUI) drawInfoBar(screen *ebiten.Image) {
 	drawText(screen, hints, u.barFace, pad, y0+lineH, pieceWhite)
 }
 
-// drawBanner overlays the game result across the center of the board so the end
-// of the game is obvious without checking the terminal.
 func (u *GameUI) drawBanner(screen *ebiten.Image) {
 	boardSize := float32(u.boardSize())
 	msg := game.ResultText(u.game.Result(), u.game.DrawReason())
@@ -110,9 +103,6 @@ func drawText(screen *ebiten.Image, s string, face text.Face, x, y float64, c co
 	text.Draw(screen, s, face, op)
 }
 
-// squareTopLeft returns the pixel coordinates of a square's top-left corner.
-// By default rank 8 is at the top and file a at the left; when flipped the board
-// is rotated 180° so black is at the bottom.
 func (u *GameUI) squareTopLeft(file, rank int) (x, y float32) {
 	size := float32(u.cfg.SquareSize)
 	col, row := file, 7-rank

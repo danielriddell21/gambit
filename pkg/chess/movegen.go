@@ -8,18 +8,26 @@ func (b *Board) LegalMoves() []Move {
 }
 
 // GenerateMoves appends all fully-legal moves for the side to move to dst and
-// returns the extended slice.
+// returns the extended slice. The pseudo-legal moves are generated into dst and
+// filtered in place, so hot search loops that pass a reused buffer avoid a
+// per-call allocation.
 func (b *Board) GenerateMoves(dst []Move) []Move {
-	pseudo := b.GeneratePseudoLegal(nil)
+	start := len(dst)
+	dst = b.GeneratePseudoLegal(dst)
 	us := b.sideToMove
-	for _, m := range pseudo {
+	// Compact the just-appended pseudo-legal moves, keeping only those that do
+	// not leave our own king in check.
+	w := start
+	for r := start; r < len(dst); r++ {
+		m := dst[r]
 		u := b.MakeMove(m)
 		if !b.isColorInCheck(us) {
-			dst = append(dst, m)
+			dst[w] = m
+			w++
 		}
 		b.UnmakeMove(m, u)
 	}
-	return dst
+	return dst[:w]
 }
 
 // GeneratePseudoLegal appends all pseudo-legal moves (legal except that they may

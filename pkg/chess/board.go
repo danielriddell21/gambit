@@ -19,6 +19,11 @@ func (c CastleRights) Has(r CastleRights) bool {
 // Board is a single chess position using an 8x8 mailbox representation. It is
 // deliberately representation-agnostic at the API level so the internals could
 // be swapped for bitboards later without breaking callers.
+//
+// [Board.MakeMove] and [Board.UnmakeMove] mutate the receiver in place and are
+// meant to be paired for fast search; [Board.ApplyMove] instead returns a new
+// board and leaves the receiver unchanged, for callers that want an immutable
+// step.
 type Board struct {
 	squares    [64]Piece
 	sideToMove Color
@@ -83,7 +88,7 @@ func (b *Board) KingSquare(c Color) Square {
 // Each calls fn for every square on the board in index order. Useful for
 // rendering without exposing the internal array.
 func (b *Board) Each(fn func(s Square, p Piece)) {
-	for s := Square(0); s < 64; s++ {
+	for s := range Square(64) {
 		fn(s, b.squares[s])
 	}
 }

@@ -53,10 +53,15 @@ func (g *Game) DrawReason() chess.DrawReason { return g.reason }
 func (g *Game) Moves() []chess.Move { return g.moves }
 
 func (g *Game) AgentName(c chess.Color) string {
+	return g.Agent(c).Name()
+}
+
+// Agent returns the agent playing the given color.
+func (g *Game) Agent(c chess.Color) agent.Agent {
 	if c == chess.White {
-		return g.players.White.Name()
+		return g.players.White
 	}
-	return g.players.Black.Name()
+	return g.players.Black
 }
 
 func (g *Game) Over() bool { return g.result != chess.InProgress }

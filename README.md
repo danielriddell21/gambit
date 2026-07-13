@@ -42,6 +42,13 @@ just lint                      # golangci-lint just demos   # regenerate demo GI
 
 Flags: `--white`, `--black`, `--depth`, `--seed`, `--fen`, `--delay`.
 
+Play against an agent yourself: set a side to `human` in the GUI build and click
+a piece then a destination.
+
+```sh
+just gui -- --white human --black minimax   # you (white) vs minimax
+```
+
 <details>
 <summary>Linux: OpenGL/X11 libraries</summary>
 

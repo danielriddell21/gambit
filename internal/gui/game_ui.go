@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
 	applog "github.com/danielriddell21/gambit/internal/log"
 	"github.com/danielriddell21/gambit/pkg/chess"
@@ -55,6 +56,10 @@ type GameUI struct {
 	flipped  bool
 	gen      int
 
+	// Human input.
+	selected    chess.Square       // square picked as a move's origin, or NoSquare
+	cancelThink context.CancelFunc // cancels the in-flight worker (e.g. a waiting human)
+
 	rec           *recorder
 	needCapture   bool
 	recFinalReady bool
@@ -90,6 +95,7 @@ func newGameUI(cfg Config) (*GameUI, error) {
 		barFace:    barFace,
 		bannerFace: bannerFace,
 		resultCh:   make(chan stepResult, 1),
+		selected:   chess.NoSquare,
 	}
 	if cfg.RecordPath != "" {
 		delay := cfg.RecordDelay
@@ -173,6 +179,8 @@ func (u *GameUI) readyToStep() bool {
 	switch {
 	case u.thinking || u.game.Over():
 		return false
+	case u.currentIsHuman():
+		return true // start the worker so it waits for the human's click
 	case u.paused && !u.stepOnce:
 		return false
 	case !u.stepOnce && time.Since(u.lastMoveTime) < u.cfg.MoveDelay:
@@ -185,12 +193,28 @@ func (u *GameUI) readyToStep() bool {
 func (u *GameUI) startThinking() {
 	u.thinking = true
 	gen := u.gen
+	// A human has no time budget; agents are bounded by ThinkTimeout.
+	ctx, cancel := context.WithCancel(context.Background())
+	if !u.currentIsHuman() {
+		ctx, cancel = context.WithTimeout(context.Background(), u.cfg.ThinkTimeout)
+	}
+	u.cancelThink = cancel
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), u.cfg.ThinkTimeout)
 		defer cancel()
 		ev, ok, err := u.game.Step(ctx)
 		u.resultCh <- stepResult{ev: ev, ok: ok, err: err, gen: gen}
 	}()
+}
+
+// currentIsHuman reports whether the side to move is a human player.
+func (u *GameUI) currentIsHuman() bool {
+	_, ok := u.humanToMove()
+	return ok
+}
+
+func (u *GameUI) humanToMove() (*agent.HumanAgent, bool) {
+	ha, ok := u.game.Agent(u.game.Board().SideToMove()).(*agent.HumanAgent)
+	return ha, ok
 }
 
 func (u *GameUI) handleInput() {
@@ -212,15 +236,94 @@ func (u *GameUI) handleInput() {
 	if inpututil.IsKeyJustPressed(ebiten.KeyMinus) || inpututil.IsKeyJustPressed(ebiten.KeyKPSubtract) {
 		u.cfg.MoveDelay = clampDelay(u.cfg.MoveDelay * 3 / 2) // slower
 	}
+	u.handleMouse()
+}
+
+// handleMouse lets a human pick a move by clicking: first click selects a piece
+// with legal moves, the second click on a legal destination plays the move.
+func (u *GameUI) handleMouse() {
+	ha, ok := u.humanToMove()
+	if !ok || !u.thinking || !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		return
+	}
+	sq, ok := u.squareAt(ebiten.CursorPosition())
+	if !ok {
+		return
+	}
+	if u.selected == chess.NoSquare {
+		if u.hasLegalFrom(sq) {
+			u.selected = sq
+		}
+		return
+	}
+	if m, ok := u.findMove(u.selected, sq); ok {
+		ha.Submit(m)
+		u.selected = chess.NoSquare
+		return
+	}
+	// A click elsewhere re-selects another friendly piece, or clears.
+	if u.hasLegalFrom(sq) {
+		u.selected = sq
+	} else {
+		u.selected = chess.NoSquare
+	}
+}
+
+// squareAt maps a pixel position to a board square, respecting the flip. It
+// returns false for clicks outside the board (e.g. the info bar).
+func (u *GameUI) squareAt(mx, my int) (chess.Square, bool) {
+	size := u.cfg.SquareSize
+	if mx < 0 || my < 0 || mx >= size*8 || my >= size*8 {
+		return chess.NoSquare, false
+	}
+	col, row := mx/size, my/size
+	file, rank := col, 7-row
+	if u.flipped {
+		file, rank = 7-col, row
+	}
+	return chess.NewSquare(file, rank), true
+}
+
+// hasLegalFrom reports whether the side to move has a legal move from sq.
+func (u *GameUI) hasLegalFrom(sq chess.Square) bool {
+	for _, m := range u.game.Board().LegalMoves() {
+		if m.From() == sq {
+			return true
+		}
+	}
+	return false
+}
+
+// findMove returns the legal move from->to, preferring queen promotion.
+func (u *GameUI) findMove(from, to chess.Square) (chess.Move, bool) {
+	var fallback chess.Move
+	found := false
+	for _, m := range u.game.Board().LegalMoves() {
+		if m.From() != from || m.To() != to {
+			continue
+		}
+		if !m.IsPromotion() {
+			return m, true
+		}
+		if m.Promotion() == chess.Queen {
+			return m, true
+		}
+		fallback, found = m, true
+	}
+	return fallback, found
 }
 
 func (u *GameUI) restart() {
+	if u.cancelThink != nil {
+		u.cancelThink() // release a worker still waiting on the old game (e.g. a human)
+	}
 	u.gen++
 	u.game = u.newGame()
 	u.thinking = false
 	u.finished = false
 	u.paused = false
 	u.stepOnce = false
+	u.selected = chess.NoSquare
 	u.lastMoveTime = time.Time{}
 	u.refreshSnapshot()
 }
@@ -238,6 +341,7 @@ func clampDelay(d time.Duration) time.Duration {
 
 func (u *GameUI) Draw(screen *ebiten.Image) {
 	u.drawBoard(screen)
+	u.drawHighlights(screen)
 	u.drawPieces(screen)
 	u.drawInfoBar(screen)
 	if u.game.Over() {

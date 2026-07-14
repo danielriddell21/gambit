@@ -56,7 +56,6 @@ func (g *Game) AgentName(c chess.Color) string {
 	return g.Agent(c).Name()
 }
 
-// Agent returns the agent playing the given color.
 func (g *Game) Agent(c chess.Color) agent.Agent {
 	if c == chess.White {
 		return g.players.White

@@ -98,7 +98,6 @@ func (u *GameUI) drawBanner(screen *ebiten.Image) {
 	drawText(screen, msg, u.bannerFace, tx, ty, pieceWhite)
 }
 
-// drawHighlights tints the human's selected square and its legal destinations.
 func (u *GameUI) drawHighlights(screen *ebiten.Image) {
 	if u.selected == chess.NoSquare {
 		return

@@ -56,9 +56,8 @@ type GameUI struct {
 	flipped  bool
 	gen      int
 
-	// Human input.
-	selected    chess.Square       // square picked as a move's origin, or NoSquare
-	cancelThink context.CancelFunc // cancels the in-flight worker (e.g. a waiting human)
+	selected    chess.Square
+	cancelThink context.CancelFunc
 
 	rec           *recorder
 	needCapture   bool
@@ -206,7 +205,6 @@ func (u *GameUI) startThinking() {
 	}()
 }
 
-// currentIsHuman reports whether the side to move is a human player.
 func (u *GameUI) currentIsHuman() bool {
 	_, ok := u.humanToMove()
 	return ok
@@ -239,8 +237,6 @@ func (u *GameUI) handleInput() {
 	u.handleMouse()
 }
 
-// handleMouse lets a human pick a move by clicking: first click selects a piece
-// with legal moves, the second click on a legal destination plays the move.
 func (u *GameUI) handleMouse() {
 	ha, ok := u.humanToMove()
 	if !ok || !u.thinking || !inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
@@ -269,12 +265,10 @@ func (u *GameUI) handleMouse() {
 	}
 }
 
-// squareAt maps a pixel position to a board square, respecting the flip. It
-// returns false for clicks outside the board (e.g. the info bar).
 func (u *GameUI) squareAt(mx, my int) (chess.Square, bool) {
 	size := u.cfg.SquareSize
 	if mx < 0 || my < 0 || mx >= size*8 || my >= size*8 {
-		return chess.NoSquare, false
+		return chess.NoSquare, false // outside the board (e.g. the info bar)
 	}
 	col, row := mx/size, my/size
 	file, rank := col, 7-row
@@ -284,7 +278,6 @@ func (u *GameUI) squareAt(mx, my int) (chess.Square, bool) {
 	return chess.NewSquare(file, rank), true
 }
 
-// hasLegalFrom reports whether the side to move has a legal move from sq.
 func (u *GameUI) hasLegalFrom(sq chess.Square) bool {
 	for _, m := range u.game.Board().LegalMoves() {
 		if m.From() == sq {
@@ -294,7 +287,6 @@ func (u *GameUI) hasLegalFrom(sq chess.Square) bool {
 	return false
 }
 
-// findMove returns the legal move from->to, preferring queen promotion.
 func (u *GameUI) findMove(from, to chess.Square) (chess.Move, bool) {
 	var fallback chess.Move
 	found := false

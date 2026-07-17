@@ -61,6 +61,15 @@ func Execute(version string) error {
 }
 
 func run(c config) error {
+	if human := c.white == "human" || c.black == "human"; human {
+		if !gui.Available() {
+			return fmt.Errorf("the human player requires the GUI build (go build -tags ebiten)")
+		}
+		if c.record != "" {
+			return fmt.Errorf("cannot record a game with a human player")
+		}
+	}
+
 	var start *chess.Board
 	if c.fen != "" {
 		b, err := chess.ParseFEN(c.fen)

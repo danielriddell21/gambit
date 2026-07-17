@@ -69,6 +69,8 @@ func (u *GameUI) drawInfoBar(screen *ebiten.Image) {
 	switch {
 	case u.game.Over():
 		status += "    [over]"
+	case u.currentIsHuman():
+		status += "    [your move — click a piece]"
 	case u.paused:
 		status += "    [paused]"
 	}
@@ -94,6 +96,26 @@ func (u *GameUI) drawBanner(screen *ebiten.Image) {
 	tx := (float64(u.boardSize()) - tw) / 2
 	ty := float64(bandY) + (float64(bandH)-th)/2
 	drawText(screen, msg, u.bannerFace, tx, ty, pieceWhite)
+}
+
+func (u *GameUI) drawHighlights(screen *ebiten.Image) {
+	if u.selected == chess.NoSquare {
+		return
+	}
+	size := float32(u.cfg.SquareSize)
+	selectTint := color.RGBA{R: 0x2e, G: 0x8b, B: 0x57, A: 0x99}
+	targetTint := color.RGBA{R: 0x2e, G: 0x8b, B: 0x57, A: 0x55}
+
+	sx, sy := u.squareTopLeft(u.selected.File(), u.selected.Rank())
+	vector.FillRect(screen, sx, sy, size, size, selectTint, false)
+
+	for _, m := range u.game.Board().LegalMoves() {
+		if m.From() != u.selected {
+			continue
+		}
+		tx, ty := u.squareTopLeft(m.To().File(), m.To().Rank())
+		vector.FillRect(screen, tx, ty, size, size, targetTint, false)
+	}
 }
 
 func drawText(screen *ebiten.Image, s string, face text.Face, x, y float64, c color.Color) {

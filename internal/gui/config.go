@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"time"
 
+	"github.com/danielriddell21/crucible/record"
+
 	"github.com/danielriddell21/gambit/internal/game"
 	applog "github.com/danielriddell21/gambit/internal/log"
 )
@@ -19,7 +21,9 @@ type Config struct {
 	MoveDelay    time.Duration
 	ThinkTimeout time.Duration
 
-	RecordPath  string
+	// Rec holds the shared --record flags; RecordDelay is gambit's own
+	// per-move frame delay for the paced clip.
+	Rec         record.Options
 	RecordDelay int
 }
 

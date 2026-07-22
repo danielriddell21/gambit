@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/rand/v2"
 
+	"github.com/danielriddell21/crucible/rng"
+
 	"github.com/danielriddell21/gambit/internal/agent/eval"
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
@@ -11,7 +13,7 @@ import (
 func init() {
 	Register("greedy", func(o Options) (Agent, error) {
 		seed := uint64(o.Seed)
-		return &greedyAgent{rng: rand.New(rand.NewPCG(seed, seed^0x9E3779B97F4A7C15))}, nil
+		return &greedyAgent{rng: rng.Stream(seed, seed^0x9E3779B97F4A7C15)}, nil
 	})
 }
 

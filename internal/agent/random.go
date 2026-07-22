@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math/rand/v2"
 
+	"github.com/danielriddell21/crucible/rng"
+
 	"github.com/danielriddell21/gambit/pkg/chess"
 )
 
@@ -13,7 +15,7 @@ var errNoMoves = errors.New("agent: no legal moves")
 func init() {
 	Register("random", func(o Options) (Agent, error) {
 		seed := uint64(o.Seed)
-		return &randomAgent{rng: rand.New(rand.NewPCG(seed, seed^0x9E3779B97F4A7C15))}, nil
+		return &randomAgent{rng: rng.Stream(seed, seed^0x9E3779B97F4A7C15)}, nil
 	})
 }
 

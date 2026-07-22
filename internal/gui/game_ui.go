@@ -100,20 +100,20 @@ func newGameUI(cfg Config) (*GameUI, error) {
 		resultCh:   make(chan stepResult, 1),
 		selected:   chess.NoSquare,
 	}
-	if cfg.RecordPath != "" {
+	if cfg.Rec.Recording() {
 		delay := cfg.RecordDelay
 		if delay <= 0 {
 			delay = 70
 		}
 		// One frame per move at full resolution, quantised to the board's own
 		// palette, holding the final position for four seconds before the loop
-		// restarts.
-		u.rec = record.NewRecorder(0, 1, 0,
+		// restarts. --record-frames caps the clip; zero records the whole game.
+		u.rec = record.NewRecorder(0, 1, cfg.Rec.Frames,
 			record.WithPalette(demoPalette),
 			record.WithFrameDelay(delay),
 			record.WithFinalHold(400),
 		)
-		u.recPath = cfg.RecordPath
+		u.recPath = cfg.Rec.Path
 		u.needCapture = true // capture the initial position
 	}
 	u.refreshSnapshot()
@@ -176,7 +176,9 @@ func (u *GameUI) finalizeRecording() error {
 	if u.recSaved {
 		return ebiten.Termination
 	}
-	if u.game.Over() && u.recFinalReady {
+	// Finish when --record-frames is reached, or when the game ends and its
+	// final position has been captured.
+	if u.rec.Done() || (u.game.Over() && u.recFinalReady) {
 		if err := u.rec.Save(u.recPath); err != nil {
 			return fmt.Errorf("save recording: %w", err)
 		}

@@ -4,12 +4,15 @@ package gui
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+
+	"github.com/danielriddell21/crucible/record"
 
 	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
@@ -59,7 +62,8 @@ type GameUI struct {
 	selected    chess.Square
 	cancelThink context.CancelFunc
 
-	rec           *recorder
+	rec           *record.Recorder
+	recPath       string
 	needCapture   bool
 	recFinalReady bool
 	recSaved      bool
@@ -101,7 +105,15 @@ func newGameUI(cfg Config) (*GameUI, error) {
 		if delay <= 0 {
 			delay = 70
 		}
-		u.rec = newRecorder(cfg.RecordPath, delay)
+		// One frame per move at full resolution, quantised to the board's own
+		// palette, holding the final position for four seconds before the loop
+		// restarts.
+		u.rec = record.NewRecorder(0, 1, 0,
+			record.WithPalette(demoPalette),
+			record.WithFrameDelay(delay),
+			record.WithFinalHold(400),
+		)
+		u.recPath = cfg.RecordPath
 		u.needCapture = true // capture the initial position
 	}
 	u.refreshSnapshot()
@@ -165,8 +177,8 @@ func (u *GameUI) finalizeRecording() error {
 		return ebiten.Termination
 	}
 	if u.game.Over() && u.recFinalReady {
-		if err := u.rec.save(); err != nil {
-			return err
+		if err := u.rec.Save(u.recPath); err != nil {
+			return fmt.Errorf("save recording: %w", err)
 		}
 		u.recSaved = true
 		return ebiten.Termination
@@ -341,7 +353,7 @@ func (u *GameUI) Draw(screen *ebiten.Image) {
 	}
 
 	if u.rec != nil && u.needCapture {
-		u.rec.capture(screen)
+		u.rec.Add(screenRGBA(screen))
 		u.needCapture = false
 		if u.game.Over() {
 			u.recFinalReady = true

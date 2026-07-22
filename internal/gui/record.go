@@ -3,60 +3,23 @@
 package gui
 
 import (
-	"fmt"
 	"image"
 	"image/color"
-	"image/gif"
-	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type recorder struct {
-	path   string
-	delay  int
-	frames []*image.Paletted
-	delays []int
-}
-
-func newRecorder(path string, delay int) *recorder {
-	return &recorder{path: path, delay: delay}
-}
-
-func (r *recorder) capture(screen *ebiten.Image) {
+// screenRGBA copies the rendered screen into an image the recorder can add.
+func screenRGBA(screen *ebiten.Image) *image.RGBA {
 	b := screen.Bounds()
 	buf := make([]byte, 4*b.Dx()*b.Dy())
 	screen.ReadPixels(buf)
-	rgba := &image.RGBA{Pix: buf, Stride: 4 * b.Dx(), Rect: image.Rect(0, 0, b.Dx(), b.Dy())}
-
-	pal := image.NewPaletted(rgba.Rect, demoPalette)
-	for y := rgba.Rect.Min.Y; y < rgba.Rect.Max.Y; y++ {
-		for x := rgba.Rect.Min.X; x < rgba.Rect.Max.X; x++ {
-			pal.Set(x, y, rgba.At(x, y))
-		}
-	}
-	r.frames = append(r.frames, pal)
-	r.delays = append(r.delays, r.delay)
+	return &image.RGBA{Pix: buf, Stride: 4 * b.Dx(), Rect: image.Rect(0, 0, b.Dx(), b.Dy())}
 }
 
-func (r *recorder) save() error {
-	if len(r.delays) > 0 {
-		r.delays[len(r.delays)-1] = 400
-	}
-	f, err := os.Create(r.path)
-	if err != nil {
-		return fmt.Errorf("create gif: %w", err)
-	}
-	if err := gif.EncodeAll(f, &gif.GIF{Image: r.frames, Delay: r.delays}); err != nil {
-		_ = f.Close()
-		return fmt.Errorf("encode gif: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("close gif: %w", err)
-	}
-	return nil
-}
-
+// demoPalette is tuned to the board's own colours — the two square shades and
+// the two piece shades, plus blends between them — so the GIF quantises
+// cleanly instead of through a generic web palette.
 var demoPalette = buildPalette()
 
 func buildPalette() color.Palette {

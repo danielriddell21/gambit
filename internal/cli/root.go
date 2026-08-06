@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/danielriddell21/crucible/record"
-
 	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
 	"github.com/danielriddell21/gambit/internal/gui"
@@ -23,7 +21,6 @@ type config struct {
 	seed         int64
 	fen          string
 	delay        time.Duration
-	rec          record.Options
 	square       int
 }
 
@@ -51,7 +48,6 @@ func Execute(version string) error {
 	f.Int64Var(&c.seed, "seed", time.Now().UnixNano(), "RNG seed for stochastic agents")
 	f.StringVar(&c.fen, "fen", "", "starting position FEN (default: standard start)")
 	f.DurationVar(&c.delay, "delay", 400*time.Millisecond, "pause between moves in the GUI")
-	c.rec.AddPacedFlags(f)
 	f.IntVar(&c.square, "square", 80, "board square size in pixels (GUI only)")
 
 	root.AddCommand(completionCmd())
@@ -66,9 +62,6 @@ func run(c config) error {
 	if human := c.white == "human" || c.black == "human"; human {
 		if !gui.Available() {
 			return fmt.Errorf("the human player requires the GUI build (go build -tags ebiten)")
-		}
-		if c.rec.Recording() {
-			return fmt.Errorf("cannot record a game with a human player")
 		}
 	}
 
@@ -121,7 +114,6 @@ func run(c config) error {
 	cfg.NewGame = newGame
 	cfg.Logger = logger
 	cfg.MoveDelay = c.delay
-	cfg.Rec = c.rec
 	if c.square > 0 {
 		cfg.SquareSize = c.square
 	}

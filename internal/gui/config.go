@@ -21,8 +21,8 @@ type Config struct {
 	MoveDelay    time.Duration
 	ThinkTimeout time.Duration
 
-	// Rec holds the shared --record flags; RecordDelay is gambit's own
-	// per-move frame delay for the paced clip.
+	// Rec names the recording [Render] writes; RecordDelay is gambit's own
+	// per-move frame delay for the paced clip. Both are set by tools/demogen.
 	Rec         record.Options
 	RecordDelay int
 }

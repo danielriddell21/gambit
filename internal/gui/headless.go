@@ -62,7 +62,7 @@ func Render(cfg Config) error {
 
 	clip := demo.Clip{
 		// One frame per move: the clip ends with the game, unless
-		// --record-frames caps it sooner.
+		// cfg.Rec.Frames caps it sooner.
 		Frames:   cfg.Rec.Frames,
 		MaxSteps: maxRecordedMoves,
 		Stop:     func(int) bool { return g.Over() },

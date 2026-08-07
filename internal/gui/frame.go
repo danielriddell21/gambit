@@ -7,6 +7,7 @@ import (
 	"golang.org/x/image/font"
 
 	"github.com/danielriddell21/crucible/canvas"
+	"github.com/danielriddell21/crucible/keymap"
 
 	"github.com/danielriddell21/gambit/internal/game"
 	"github.com/danielriddell21/gambit/pkg/chess"
@@ -20,8 +21,15 @@ var (
 	targetTint = color.RGBA{R: 0x2e, G: 0x8b, B: 0x57, A: 0x55}
 )
 
-// hints is the control bar under the board.
-const hints = "space pause · n step · r restart · f flip · +/- speed"
+// hints is the control bar under the board, laid out by crucible/keymap so it
+// reads the same as every other app in the family.
+var hints = []keymap.Binding{
+	{Key: "space", Action: "pause"},
+	{Key: "n", Action: "step"},
+	{Key: "r", Action: "restart"},
+	{Key: "f", Action: "flip"},
+	{Key: "+/-", Action: "speed"},
+}
 
 // BoardView is everything a frame draws: the position, what the player has
 // selected, and how the game stands.
@@ -125,7 +133,14 @@ func drawInfoBar(c *canvas.Canvas, cfg Config, boardSize int, face font.Face, v 
 	lineH := face.Metrics().Height.Ceil()
 	ascent := face.Metrics().Ascent.Ceil()
 	c.TextFace(pad, boardSize+pad+ascent, status, pieceWhite, face)
-	c.TextFace(pad, boardSize+pad+lineH+ascent, hints, pieceWhite, face)
+
+	// The hints hug the bottom of the bar, wrapping if the board is drawn small
+	// enough that they no longer fit on one row.
+	_, frameH := FrameSize(cfg)
+	hf := keymap.Face{LineHeight: lineH, Measure: func(s string) int { return canvas.MeasureFace(s, face) }}
+	for _, line := range keymap.BottomBar(hints, boardSize, frameH, pad, hf) {
+		c.TextFace(line.X, line.Y+ascent, line.Text, pieceWhite, face)
+	}
 }
 
 func drawBanner(c *canvas.Canvas, size, boardSize int, face font.Face, v BoardView) {

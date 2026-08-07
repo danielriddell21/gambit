@@ -5,24 +5,18 @@ package gui
 import (
 	"context"
 	"fmt"
-	"image/color"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
+	"github.com/danielriddell21/crucible/canvas"
 	"github.com/danielriddell21/crucible/record"
 
 	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
 	applog "github.com/danielriddell21/gambit/internal/log"
 	"github.com/danielriddell21/gambit/pkg/chess"
-)
-
-var (
-	pieceWhite = color.RGBA{R: 0xf5, G: 0xf5, B: 0xf0, A: 0xff}
-	pieceBlack = color.RGBA{R: 0x20, G: 0x20, B: 0x24, A: 0xff}
 )
 
 const (
@@ -44,9 +38,8 @@ type GameUI struct {
 	cfg       Config
 	barHeight int
 
-	face       text.Face
-	barFace    text.Face
-	bannerFace text.Face
+	faces  Faces
+	canvas *canvas.Canvas
 
 	snapshot     [64]chess.Piece
 	thinking     bool
@@ -70,35 +63,21 @@ type GameUI struct {
 }
 
 func newGameUI(cfg Config) (*GameUI, error) {
-	sq := float64(cfg.SquareSize)
-	face, err := newFace(sq * 0.8)
-	if err != nil {
-		return nil, err
-	}
-	barHeight := cfg.SquareSize * 7 / 10
-	if barHeight < 46 {
-		barHeight = 46
-	}
-	barFace, err := newFace(float64(barHeight) * 0.3)
-	if err != nil {
-		return nil, err
-	}
-	bannerFace, err := newFace(sq * 0.42)
+	barHeight := BarHeight(cfg.SquareSize)
+	faces, err := LoadFaces(cfg.SquareSize, barHeight)
 	if err != nil {
 		return nil, err
 	}
 
 	u := &GameUI{
-		game:       cfg.Game,
-		newGame:    cfg.NewGame,
-		log:        cfg.Logger,
-		cfg:        cfg,
-		barHeight:  barHeight,
-		face:       face,
-		barFace:    barFace,
-		bannerFace: bannerFace,
-		resultCh:   make(chan stepResult, 1),
-		selected:   chess.NoSquare,
+		game:      cfg.Game,
+		newGame:   cfg.NewGame,
+		log:       cfg.Logger,
+		cfg:       cfg,
+		barHeight: barHeight,
+		faces:     faces,
+		resultCh:  make(chan stepResult, 1),
+		selected:  chess.NoSquare,
 	}
 	if cfg.Rec.Recording() {
 		delay := cfg.RecordDelay
@@ -346,16 +325,15 @@ func clampDelay(d time.Duration) time.Duration {
 }
 
 func (u *GameUI) Draw(screen *ebiten.Image) {
-	u.drawBoard(screen)
-	u.drawHighlights(screen)
-	u.drawPieces(screen)
-	u.drawInfoBar(screen)
-	if u.game.Over() {
-		u.drawBanner(screen)
+	if u.canvas == nil {
+		u.canvas = canvas.New(FrameSize(u.cfg))
 	}
+	DrawFrame(u.canvas, u.cfg, u.faces, u.view())
+	screen.WritePixels(u.canvas.Pixels())
 
 	if u.rec != nil && u.needCapture {
-		u.rec.Add(screenRGBA(screen))
+		w, h := u.canvas.Size()
+		u.rec.Add(record.FromRGBA(u.canvas.Pixels(), w, h))
 		u.needCapture = false
 		if u.game.Over() {
 			u.recFinalReady = true

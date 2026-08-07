@@ -46,7 +46,7 @@ run *ARGS:
 # run the GUI window (Ebiten)
 [group('run')]
 gui *ARGS:
-    go run -tags ebiten ./cmd/gambit {{ARGS}}
+    go run ./cmd/gambit {{ARGS}}
 
 # run the tests with the race detector
 [group('test')]
@@ -61,5 +61,7 @@ perft:
 # regenerate the demo GIFs under docs/demos by recording the GUI
 [group('run')]
 demos:
-    go run -tags ebiten ./cmd/gambit --white minimax --black random --seed 7 --delay 1ms --square 48 --record docs/demos/minimax-vs-random.gif
-    go run -tags ebiten ./cmd/gambit --white minimax --black minimax --depth 3 --seed 1 --delay 1ms --square 48 --record docs/demos/minimax-vs-minimax.gif
+    # Rendered headlessly through the software canvas: no window, no display,
+    # no ebiten build tag. A .mp4 path records video instead of a GIF.
+    go run ./cmd/gambit --white minimax --black random --seed 7 --delay 1ms --square 48 --record docs/demos/minimax-vs-random.gif
+    go run ./cmd/gambit --white minimax --black minimax --depth 3 --seed 1 --delay 1ms --square 48 --record docs/demos/minimax-vs-minimax.gif

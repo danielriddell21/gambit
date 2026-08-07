@@ -1,21 +1,6 @@
-//go:build ebiten
-
 package gui
 
-import (
-	"image"
-	"image/color"
-
-	"github.com/hajimehoshi/ebiten/v2"
-)
-
-// screenRGBA copies the rendered screen into an image the recorder can add.
-func screenRGBA(screen *ebiten.Image) *image.RGBA {
-	b := screen.Bounds()
-	buf := make([]byte, 4*b.Dx()*b.Dy())
-	screen.ReadPixels(buf)
-	return &image.RGBA{Pix: buf, Stride: 4 * b.Dx(), Rect: image.Rect(0, 0, b.Dx(), b.Dy())}
-}
+import "image/color"
 
 // demoPalette is tuned to the board's own colours — the two square shades and
 // the two piece shades, plus blends between them — so the GIF quantises

@@ -58,10 +58,9 @@ test-race:
 perft:
     go test ./pkg/chess -run TestPerft -v
 
-# regenerate the demo GIFs under docs/demos by recording the GUI
+# regenerate the demo media under docs/demos
 [group('run')]
 demos:
     # Rendered headlessly through the software canvas: no window, no display,
-    # no ebiten build tag. A .mp4 path records video instead of a GIF.
-    go run ./cmd/gambit --white minimax --black random --seed 7 --delay 1ms --square 48 --record docs/demos/minimax-vs-random.gif
-    go run ./cmd/gambit --white minimax --black minimax --depth 3 --seed 1 --delay 1ms --square 48 --record docs/demos/minimax-vs-minimax.gif
+    # no ebiten build tag. The clips are defined in tools/demogen.
+    go run ./tools/demogen

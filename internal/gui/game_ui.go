@@ -4,14 +4,12 @@ package gui
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
 	"github.com/danielriddell21/crucible/canvas"
-	"github.com/danielriddell21/crucible/record"
 
 	"github.com/danielriddell21/gambit/internal/agent"
 	"github.com/danielriddell21/gambit/internal/game"
@@ -54,12 +52,6 @@ type GameUI struct {
 
 	selected    chess.Square
 	cancelThink context.CancelFunc
-
-	rec           *record.Recorder
-	recPath       string
-	needCapture   bool
-	recFinalReady bool
-	recSaved      bool
 }
 
 func newGameUI(cfg Config) (*GameUI, error) {
@@ -79,22 +71,6 @@ func newGameUI(cfg Config) (*GameUI, error) {
 		resultCh:  make(chan stepResult, 1),
 		selected:  chess.NoSquare,
 	}
-	if cfg.Rec.Recording() {
-		delay := cfg.RecordDelay
-		if delay <= 0 {
-			delay = 70
-		}
-		// One frame per move at full resolution, quantised to the board's own
-		// palette, holding the final position for four seconds before the loop
-		// restarts. --record-frames caps the clip; zero records the whole game.
-		u.rec = record.NewRecorder(0, 1, cfg.Rec.Frames,
-			record.WithPalette(demoPalette),
-			record.WithFrameDelay(delay),
-			record.WithFinalHold(400),
-		)
-		u.recPath = cfg.Rec.Path
-		u.needCapture = true // capture the initial position
-	}
 	u.refreshSnapshot()
 	return u, nil
 }
@@ -110,11 +86,6 @@ func (u *GameUI) Update() error {
 
 	if err := u.drainResult(); err != nil {
 		return err
-	}
-	if u.rec != nil {
-		if err := u.finalizeRecording(); err != nil {
-			return err
-		}
 	}
 	if !u.readyToStep() {
 		return nil
@@ -138,31 +109,12 @@ func (u *GameUI) drainResult() error {
 			u.log.Move(r.ev)
 			u.refreshSnapshot()
 			u.lastMoveTime = time.Now()
-			if u.rec != nil {
-				u.needCapture = true
-			}
 		}
 		if u.game.Over() && !u.finished {
 			u.finished = true
 			u.log.Result(u.game.Result(), u.game.DrawReason())
 		}
 	default:
-	}
-	return nil
-}
-
-func (u *GameUI) finalizeRecording() error {
-	if u.recSaved {
-		return ebiten.Termination
-	}
-	// Finish when --record-frames is reached, or when the game ends and its
-	// final position has been captured.
-	if u.rec.Done() || (u.game.Over() && u.recFinalReady) {
-		if err := u.rec.Save(u.recPath); err != nil {
-			return fmt.Errorf("save recording: %w", err)
-		}
-		u.recSaved = true
-		return ebiten.Termination
 	}
 	return nil
 }
@@ -330,15 +282,6 @@ func (u *GameUI) Draw(screen *ebiten.Image) {
 	}
 	DrawFrame(u.canvas, u.cfg, u.faces, u.view())
 	screen.WritePixels(u.canvas.Pixels())
-
-	if u.rec != nil && u.needCapture {
-		w, h := u.canvas.Size()
-		u.rec.Add(record.FromRGBA(u.canvas.Pixels(), w, h))
-		u.needCapture = false
-		if u.game.Over() {
-			u.recFinalReady = true
-		}
-	}
 }
 
 func (u *GameUI) Layout(_, _ int) (int, int) {

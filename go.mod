@@ -6,7 +6,7 @@ require (
 	github.com/danielriddell21/crucible v0.15.1
 	github.com/hajimehoshi/ebiten/v2 v2.9.9
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/image v0.44.0
+	golang.org/x/image v0.45.0
 )
 
 require (
@@ -17,6 +17,6 @@ require (
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.36.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )

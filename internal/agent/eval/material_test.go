@@ -37,7 +37,7 @@ func TestMaterialValuesPieces(t *testing.T) {
 	queen := Material(mustFEN(t, "4k3/8/8/8/8/8/8/3QK3 w - - 0 1"))
 	rook := Material(mustFEN(t, "4k3/8/8/8/8/8/8/3RK3 w - - 0 1"))
 	pawn := Material(mustFEN(t, "4k3/8/8/8/8/8/3P4/4K3 w - - 0 1"))
-	if !(queen > rook && rook > pawn && pawn > 0) {
+	if queen <= rook || rook <= pawn || pawn <= 0 {
 		t.Errorf("queen %d, rook %d, pawn %d: want queen > rook > pawn > 0", queen, rook, pawn)
 	}
 }
